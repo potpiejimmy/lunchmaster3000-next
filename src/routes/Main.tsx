@@ -11,6 +11,10 @@ import {
   CardContent,
   Checkbox,
   Divider,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   Link,
   Slider,
@@ -45,6 +49,11 @@ export default function Main() {
   const socketRef = useRef<Socket | null>(null);
   const orderTypingRef = useRef<Record<string, NodeJS.Timeout>>({});
   const adminTypingRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const orderInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const previousOrderSetIdsRef = useRef<string[]>([]);
+  const locationEditorScrollAnchorRef = useRef<HTMLDivElement | null>(null);
+  const locationNameInputRef = useRef<HTMLInputElement | null>(null);
+  const locationImageInputRef = useRef<HTMLInputElement | null>(null);
 
   const [data, setData] = useState<any>({ locations: [], ordersets: {}, chat: [] });
   const [typing, setTyping] = useState(false);
@@ -55,6 +64,7 @@ export default function Main() {
   const [orderChatInputs, setOrderChatInputs] = useState<Record<string, string>>({});
   const [adminInputs, setAdminInputs] = useState<AdminInputMap>({});
   const [visibleEditLocationId, setVisibleEditLocationId] = useState<string | number | null>(null);
+  const [pendingOrderSetDeletion, setPendingOrderSetDeletion] = useState<any | null>(null);
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -62,6 +72,40 @@ export default function Main() {
 
   const currentName = context?.name || (typeof window !== "undefined" ? localStorage.getItem("name") : "") || "";
   const orderSets = useMemo(() => Object.values<any>(data.ordersets || {}), [data.ordersets]);
+
+  useEffect(() => {
+    const currentIds = orderSets.map((orderSet: any) => String(orderSet.id));
+    const addedIds = currentIds.filter((id) => !previousOrderSetIdsRef.current.includes(id));
+
+    if (addedIds.length > 0) {
+      const focusTarget = orderSets.find((orderSet: any) => addedIds.includes(String(orderSet.id)) && !orderSet.finished);
+      if (focusTarget?.id) {
+        window.setTimeout(() => {
+          orderInputRefs.current[String(focusTarget.id)]?.focus();
+        }, 10);
+      }
+    }
+
+    previousOrderSetIdsRef.current = currentIds;
+  }, [orderSets]);
+
+  useEffect(() => {
+    if (!locationEditor) return;
+
+    const scrollDelay = window.setTimeout(() => {
+      locationEditorScrollAnchorRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+
+    const focusDelay = window.setTimeout(
+      () => locationNameInputRef.current?.focus(),
+      locationEditor?.id ? 900 : 400,
+    );
+
+    return () => {
+      window.clearTimeout(scrollDelay);
+      window.clearTimeout(focusDelay);
+    };
+  }, [Boolean(locationEditor), locationEditor?.id]);
 
   useEffect(() => {
     const currentSearch = new URLSearchParams(window.location.search);
@@ -244,6 +288,10 @@ export default function Main() {
     event.target.value = "";
   }
 
+  function openLocationImagePicker() {
+    locationImageInputRef.current?.click();
+  }
+
   function onCropComplete(_: Area, areaPixels: Area) {
     setCroppedAreaPixels(areaPixels);
   }
@@ -333,9 +381,10 @@ export default function Main() {
   }
 
   function onOrderInputChange(orderSetId: string, field: "order" | "price", value: string) {
+    const normalizedValue = field === "price" ? sanitizeDecimalInput(value).slice(0, 7) : value;
     const next = {
       ...(orderInputs[orderSetId] || { order: "", price: "" }),
-      [field]: value,
+      [field]: normalizedValue,
     };
 
     setOrderInputs((previous) => ({ ...previous, [orderSetId]: next }));
@@ -345,16 +394,17 @@ export default function Main() {
     orderTypingRef.current[orderSetId] = setTimeout(async () => {
       await context?.api.setOrder(orderSetId, currentName, {
         order: next.order,
-        price: next.price ? Number(next.price) : 0,
+        price: parseDecimalInput(next.price),
       });
       setTyping(false);
     }, 700);
   }
 
   function onAdminInputChange(orderSetId: string, field: "comment" | "payLink" | "fee", value: string) {
+    const normalizedValue = field === "fee" ? sanitizeDecimalInput(value).slice(0, 7) : value;
     const next = {
       ...(adminInputs[orderSetId] || { comment: "", payLink: "", fee: "" }),
-      [field]: value,
+      [field]: normalizedValue,
     };
 
     setAdminInputs((previous) => ({ ...previous, [orderSetId]: next }));
@@ -366,10 +416,32 @@ export default function Main() {
       await context?.api.updateOrderSetComment(orderSetId, {
         comment: next.comment,
         payLink: next.payLink,
-        fee: next.fee ? Number(next.fee) : 0,
+        fee: parseDecimalInput(next.fee),
       });
       setTyping(false);
     }, 700);
+  }
+
+  function sanitizeDecimalInput(value: string): string {
+    return (value || "").replace(/[^\d.,]/g, "");
+  }
+
+  function parseDecimalInput(value: string): number {
+    const sanitized = sanitizeDecimalInput(value).trim();
+    if (!sanitized) return 0;
+
+    const separators = sanitized.match(/[.,]/g) || [];
+    if (separators.length === 0) {
+      const parsed = Number(sanitized);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    const lastSeparatorIndex = Math.max(sanitized.lastIndexOf("."), sanitized.lastIndexOf(","));
+    const integerPart = sanitized.slice(0, lastSeparatorIndex).replace(/[.,]/g, "");
+    const decimalPart = sanitized.slice(lastSeparatorIndex + 1).replace(/[.,]/g, "");
+    const normalized = `${integerPart || "0"}.${decimalPart}`;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 
   async function finishOrderSet(orderSetId: string) {
@@ -385,8 +457,22 @@ export default function Main() {
   }
 
   async function deleteOrderSet(orderSet: any) {
-    if (!window.confirm(`${t("components.orderset.confirm_deletion_question")}${orderSet.location?.name || ""}?`)) return;
     await context?.api.deleteOrderSet(orderSet.id);
+  }
+
+  function openDeleteOrderSetConfirm(orderSet: any) {
+    setPendingOrderSetDeletion(orderSet);
+  }
+
+  function closeDeleteOrderSetConfirm() {
+    setPendingOrderSetDeletion(null);
+  }
+
+  async function confirmDeleteOrderSet() {
+    if (!pendingOrderSetDeletion) return;
+    const orderSet = pendingOrderSetDeletion;
+    closeDeleteOrderSetConfirm();
+    await deleteOrderSet(orderSet);
   }
 
   async function toggleMoneyReceived(orderSet: any, userName: string, checked: boolean) {
@@ -499,6 +585,7 @@ export default function Main() {
     <Box className="flex flex-col gap-4">
       {orderSets.map((orderSet: any) => {
         const isOwn = orderSet?.name === currentName;
+        const hasArrived = Boolean(orderSet?.arrived);
         const orderEntries = Object.entries<any>(orderSet?.orders || {});
         const headerImage = orderSet.location?.icon ? `${resourcesBaseUrl()}/${orderSet.location.icon}.png` : "/assets/placeholder.jpg";
 
@@ -512,7 +599,7 @@ export default function Main() {
                       <img src={headerImage} alt={orderSet.location?.name || "location"} width={96} height={64} />
                     </Box>
                     <Box className="grow">
-                      <Typography sx={{ fontSize: "1rem", lineHeight: "30px", fontWeight: 500 }}>{orderSet.location?.name}</Typography>
+                      <Typography sx={{ fontSize: { xs: "1.15rem", sm: "1.35rem" }, lineHeight: 1.25, fontWeight: 500 }}>{orderSet.location?.name}</Typography>
                       {orderSet.location?.description && <Typography sx={{ color: "text.secondary", m: 0 }}>{orderSet.location.description}</Typography>}
                       {orderSet.location?.menu_link && (
                         <Link target="_blank" href={orderSet.location.menu_link} sx={{ fontSize: "0.85rem" }}>
@@ -544,15 +631,26 @@ export default function Main() {
                           onChange={(event) => onAdminInputChange(orderSet.id, "payLink", event.target.value)}
                         />
                         <TextField
-                          variant="standard"
-                          type="number"
+                            variant="standard"
+                            type="text"
+                            inputProps={{ inputMode: "decimal", maxLength: 7, style: { textAlign: "right" } }}
                           label={t("general.fee")}
                           value={adminInputs[orderSet.id]?.fee || ""}
-                          inputProps={{ style: { textAlign: "right" } }}
                           onChange={(event) => onAdminInputChange(orderSet.id, "fee", event.target.value)}
                         />
                       </Box>
                     </Box>
+                  )}
+
+                  {Boolean(orderSet.comment) && (
+                    <Card sx={{ backgroundColor: "white", m: 0, mb: 1 }}>
+                      <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
+                        <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 0.5 }}>
+                          {t("components.orderset.subtitle_infos", { name: orderSet.name })}:
+                        </Typography>
+                        <Typography sx={{ whiteSpace: "pre-line" }}>{orderSet.comment}</Typography>
+                      </CardContent>
+                    </Card>
                   )}
 
                   {!orderSet.finished && (
@@ -567,15 +665,18 @@ export default function Main() {
                             fullWidth
                             variant="standard"
                             label={isOwn ? t("components.orderset.ownorder_1") : t("components.orderset.ownorder_2")}
+                            inputRef={(element) => {
+                              orderInputRefs.current[String(orderSet.id)] = element;
+                            }}
                             value={orderInputs[orderSet.id]?.order || ""}
                             onChange={(event) => onOrderInputChange(orderSet.id, "order", event.target.value)}
                           />
                           <TextField
                             variant="standard"
-                            type="number"
+                            type="text"
+                            inputProps={{ inputMode: "decimal", maxLength: 7, style: { textAlign: "right" } }}
                             label={t("components.orderset.price")}
                             value={orderInputs[orderSet.id]?.price || ""}
-                            inputProps={{ style: { textAlign: "right" } }}
                             onChange={(event) => onOrderInputChange(orderSet.id, "price", event.target.value)}
                           />
                         </Box>
@@ -594,19 +695,19 @@ export default function Main() {
                       </Box>
                       <Divider sx={{ mb: 1 }} />
                       <Box
-                        className="hidden sm:grid gap-2 pb-1 border-b border-gray-300"
+                        className="hidden sm:grid gap-1 pb-1 border-b border-gray-300"
                         sx={{
-                          gridTemplateColumns: "130px minmax(180px,1fr) 90px 110px 90px 160px",
+                          gridTemplateColumns: "minmax(0,1fr) minmax(0,2fr) minmax(72px,.7fr) minmax(72px,.7fr) minmax(78px,.8fr) minmax(96px,1fr)",
                           fontWeight: 700,
                           fontSize: "0.8rem",
                         }}
                       >
-                        <Typography variant="caption" sx={{ fontWeight: 700 }}>{t("general.name")}</Typography>
-                        <Typography variant="caption" sx={{ fontWeight: 700 }}>{t("components.orderset.user_order_request")}</Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 700, minWidth: 0 }}>{t("general.name")}</Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 700, minWidth: 0 }}>{t("components.orderset.user_order_request")}</Typography>
                         <Typography variant="caption" sx={{ fontWeight: 700, textAlign: "right" }}>{t("components.orderset.price")}</Typography>
                         <Typography variant="caption" sx={{ fontWeight: 700, textAlign: "right" }}>{t("general.fee")}</Typography>
                         <Typography variant="caption" sx={{ fontWeight: 700, textAlign: "right" }}>{t("components.orderset.total")}</Typography>
-                        <Typography variant="caption" sx={{ fontWeight: 700 }}>{t("components.orderset.money_received")}</Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 700, textAlign: "right" }}>{t("components.orderset.money_received")}</Typography>
                       </Box>
                       <Box className="flex flex-col gap-2">
                         {orderEntries.map(([entryName, entryOrder]) => {
@@ -617,14 +718,14 @@ export default function Main() {
                           return (
                             <Box key={`${orderSet.id}-${entryName}`} className="border-b border-gray-200 pb-1">
                               <Box
-                                className="hidden sm:grid items-center gap-2"
+                                className="hidden sm:grid items-center gap-1"
                                 sx={{
-                                  gridTemplateColumns: "130px minmax(180px,1fr) 90px 110px 90px 160px",
+                                  gridTemplateColumns: "minmax(0,1fr) minmax(0,2fr) minmax(72px,.7fr) minmax(72px,.7fr) minmax(78px,.8fr) minmax(96px,1fr)",
                                   minHeight: 44,
                                 }}
                               >
-                                <Typography><b>{entryName}</b></Typography>
-                                <Typography>{entryOrder?.order || ""}</Typography>
+                                <Typography noWrap title={entryName} sx={{ minWidth: 0 }}><b>{entryName}</b></Typography>
+                                <Typography noWrap title={entryOrder?.order || ""} sx={{ minWidth: 0 }}>{entryOrder?.order || ""}</Typography>
                                 <Typography sx={{ textAlign: "right" }}>{formatMoney(Number(entryOrder?.price || 0))}</Typography>
                                 <Typography sx={{ textAlign: "right" }}>{formatMoney(fee)}</Typography>
                                 <Box sx={{ textAlign: "right" }}>
@@ -635,7 +736,7 @@ export default function Main() {
                                     </Link>
                                   )}
                                 </Box>
-                                <Box sx={{ minHeight: 42, display: "flex", alignItems: "center" }}>
+                                <Box sx={{ minHeight: 42, display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
                                   {orderSet.finished && entryName !== orderSet.name && (
                                     <Checkbox
                                       size="small"
@@ -679,12 +780,12 @@ export default function Main() {
                   {orderSet.finished && (
                     <Card sx={{ m: 0, mb: 0.5, backgroundColor: "#2E7D32", color: "white" }}>
                       <CardContent sx={{ py: 1.2, "&:last-child": { pb: 1.2 } }}>
-                        {!orderSet.arrived && (
+                        {!hasArrived && (
                           <Typography>
                             {t("components.orderset.order_finished")} {isOwn ? t("components.orderset.order_finished_own") : t("components.orderset.order_finished_not_own")}
                           </Typography>
                         )}
-                        {orderSet.arrived && (
+                        {hasArrived && (
                           <Typography variant="h6" sx={{ display: "flex", alignItems: "center", color: "white" }}>
                             <LocationOnIcon sx={{ mr: 0.5 }} />
                             {t("components.orderset.food_arrived_msg")}
@@ -711,7 +812,7 @@ export default function Main() {
                       </Button>
                     )}
                     {isOwn && (
-                      <Button color="error" variant="outlined" onClick={() => deleteOrderSet(orderSet)}>
+                      <Button color="error" variant="outlined" onClick={() => openDeleteOrderSetConfirm(orderSet)}>
                         {t("components.orderset.order_delete")}
                       </Button>
                     )}
@@ -818,7 +919,7 @@ export default function Main() {
                         onClick={() => setVisibleEditLocationId(location.id)}
                       >
                         <Box className="flex flex-row items-center gap-1">
-                          <Typography sx={{ fontSize: "1rem", lineHeight: "1.5rem", fontWeight: 500 }}>{location.name}</Typography>
+                          <Typography sx={{ fontSize: { xs: "1.1rem", sm: "1.3rem" }, lineHeight: 1.25, fontWeight: 500 }}>{location.name}</Typography>
                           <IconButton
                             size="small"
                             onClick={() => openEditLocation(location)}
@@ -894,6 +995,7 @@ export default function Main() {
                     <TextField
                       variant="standard"
                       label="Name"
+                      inputRef={locationNameInputRef}
                       value={locationEditor.name || ""}
                       onChange={(event) => setLocationEditor((previous: any) => ({ ...previous, name: event.target.value }))}
                     />
@@ -917,7 +1019,46 @@ export default function Main() {
                       onChange={(event) => setLocationEditor((previous: any) => ({ ...previous, delivery_fee: event.target.value }))}
                     />
                     <Box className="flex flex-col gap-1">
-                      <input type="file" accept="image/*" onChange={onLocationImageChange} />
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                        Image
+                      </Typography>
+                      {!rawImageSrc && (
+                        <button
+                          type="button"
+                          onClick={openLocationImagePicker}
+                          className="border-0 bg-transparent p-0 cursor-pointer w-fit"
+                          title="Select image"
+                        >
+                          <img
+                            src={
+                              locationEditor.newIcon
+                                ? locationEditor.newIcon
+                                : locationEditor.icon
+                                  ? `${resourcesBaseUrl()}/${locationEditor.icon}.png`
+                                  : "/assets/placeholder.jpg"
+                            }
+                            alt={locationEditor.name || "location-image"}
+                            width={120}
+                            height={80}
+                            style={{ objectFit: "cover" }}
+                          />
+                        </button>
+                      )}
+                      <input
+                        ref={locationImageInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={onLocationImageChange}
+                        style={{ display: "none" }}
+                      />
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={openLocationImagePicker}
+                        sx={{ alignSelf: "flex-start", minWidth: 0, px: 1, py: 0.25, fontSize: "0.72rem" }}
+                      >
+                        Browse image…
+                      </Button>
                       {rawImageSrc && (
                         <Box className="flex flex-col gap-2">
                           <Box sx={{ position: "relative", width: "100%", height: 280, backgroundColor: "#000" }}>
@@ -955,7 +1096,6 @@ export default function Main() {
                           </Box>
                         </Box>
                       )}
-                      {locationEditor.newIcon && <img src={locationEditor.newIcon} alt="new-location" width={120} />}
                     </Box>
                     <Box className="flex flex-row gap-2">
                       <Button variant="contained" disabled={locationProcessing || !locationEditor.name?.trim()} onClick={saveLocation}>
@@ -974,6 +1114,8 @@ export default function Main() {
                 </CardContent>
               </Card>
             )}
+
+            <Box ref={locationEditorScrollAnchorRef} />
 
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -1023,6 +1165,27 @@ export default function Main() {
           </Card>
         </Box>
       </Box>
+
+      <Dialog
+        open={Boolean(pendingOrderSetDeletion)}
+        onClose={closeDeleteOrderSetConfirm}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>{t("components.orderset.confirm_deletion_header")}</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ color: "text.secondary" }}>
+            {t("components.orderset.confirm_deletion_question")}
+            {pendingOrderSetDeletion?.location?.name || ""}?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={closeDeleteOrderSetConfirm}>{t("components.orderset.confirm_deletion_no")}</Button>
+          <Button color="error" variant="contained" onClick={confirmDeleteOrderSet}>
+            {t("components.orderset.confirm_deletion_yes")}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Box, Button, Card, CardContent, TextField, Typography } from "@mui/material";
+import { Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import AppContext from "../AppContext";
 import { useRouter } from "next/navigation";
@@ -11,10 +11,39 @@ export default function Settings() {
   const { t } = useTranslation();
   const router = useRouter();
   const [name, setName] = React.useState("");
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
 
   React.useEffect(() => {
-    setName(localStorage.getItem("name") ?? "");
+    const storedName = localStorage.getItem("name") ?? "";
+    setName(storedName);
+    context?.setName(storedName);
   }, []);
+
+  React.useEffect(() => {
+    const currentSearch = new URLSearchParams(window.location.search);
+    let id = currentSearch.get("id");
+
+    if (id) localStorage.setItem("id", id);
+    else id = localStorage.getItem("id");
+
+    if (!id) {
+      router.replace("/");
+      return;
+    }
+
+    if (context?.community?.webid === id) return;
+
+    context?.setLoading(true);
+    context?.api.getCommunity(id)
+      .then((community: any) => {
+        if (!community) {
+          router.replace("/");
+          return;
+        }
+        context?.setCommunity(community);
+      })
+      .finally(() => context?.setLoading(false));
+  }, [router, context]);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -22,7 +51,7 @@ export default function Settings() {
       context?.setName(name);
     }, 800);
     return () => clearTimeout(timer);
-  }, [name, context]);
+  }, [name]);
 
   function leaveCommunity() {
     localStorage.removeItem("id");
@@ -31,9 +60,17 @@ export default function Settings() {
     router.push("/");
   }
 
+  function openConfirmLeaving() {
+    setConfirmOpen(true);
+  }
+
+  function closeConfirmLeaving() {
+    setConfirmOpen(false);
+  }
+
   function confirmLeaving() {
-    const question = `${t("routes.settings.confirm_deletion_question")}${context?.community?.name ?? ""}?`;
-    if (window.confirm(question)) leaveCommunity();
+    closeConfirmLeaving();
+    leaveCommunity();
   }
 
   return (
@@ -47,7 +84,7 @@ export default function Settings() {
             {context?.community?.name}
           </Typography>
           <Box className="mt-4">
-            <Button color="error" variant="contained" onClick={confirmLeaving}>
+            <Button color="error" variant="contained" onClick={openConfirmLeaving}>
               {t("routes.settings.community_leave")}
             </Button>
           </Box>
@@ -64,6 +101,27 @@ export default function Settings() {
           />
         </CardContent>
       </Card>
+
+      <Dialog
+        open={confirmOpen}
+        onClose={closeConfirmLeaving}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>{t("routes.settings.confirm_deletion_header")}</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ color: "text.secondary" }}>
+            {t("routes.settings.confirm_deletion_question")}
+            {context?.community?.name ?? ""}?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={closeConfirmLeaving}>{t("routes.settings.confirm_deletion_no")}</Button>
+          <Button variant="contained" color="error" onClick={confirmLeaving}>
+            {t("routes.settings.confirm_deletion_yes")}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

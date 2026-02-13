@@ -118,7 +118,7 @@ export default function TopBar() {
                 </Box>
                 {/* image carousel end */}
             </AppBar>
-            <Box className="sm:hidden flex flex-row justify-end px-5"><Donate/></Box>
+            <Box className="sm:hidden flex flex-row justify-end px-5 pt-3 pb-1"><Donate/></Box>
         </Box>
     );
 }

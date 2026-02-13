@@ -1,3 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            color: rgba(0, 0, 0, 0.87);
+            font-family: Roboto, Helvetica, Arial, sans-serif;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        mat-card {
+            display: block;
+            padding: 8px 12px;
+        }
+
+        mat-card-title {
+            display: block;
+            margin: 0 0 16px;
+            font-size: 1.5rem;
+            font-weight: 400;
+            line-height: 1.334;
+            letter-spacing: 0;
+        }
+
+        mat-card-subtitle {
+            display: block;
+            margin: 0 0 12px;
+            color: rgba(0, 0, 0, 0.6);
+            font-size: 0.95rem;
+            line-height: 1.55;
+        }
+
+        h3 {
+            margin: 16px 0 8px;
+            color: rgba(0, 0, 0, 0.87);
+            font-size: 1.1rem;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        ul {
+            margin: 8px 0 8px 20px;
+            padding: 0;
+        }
+
+        li {
+            margin: 4px 0;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: underline;
+        }
+
+        ng-template {
+            display: none;
+        }
+    </style>
+</head>
+<body>
 <mat-card [ngSwitch]="currentLang">
 
     <ng-template ngSwitchCase="de">
@@ -201,3 +268,23 @@ Source: <a href="https://www.anwalt.de/vorlage/muster-datenschutzerklaerung.php"
 </ng-template>
 
 </mat-card>
+
+<script>
+    (function () {
+        var deTemplate = document.querySelector('ng-template[ngswitchcase="de"]');
+        var enTemplate = document.querySelector('ng-template[ngswitchdefault]');
+
+        if (!deTemplate || !enTemplate) {
+            return;
+        }
+
+        var firstLanguage = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
+        var useGerman = String(firstLanguage).toLowerCase().startsWith('de');
+
+        deTemplate.style.display = useGerman ? 'block' : 'none';
+        enTemplate.style.display = useGerman ? 'none' : 'block';
+        document.documentElement.lang = useGerman ? 'de' : 'en';
+    })();
+</script>
+</body>
+</html>

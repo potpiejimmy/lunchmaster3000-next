@@ -20,6 +20,33 @@ export default function Welcome() {
     const [nameInput, setNameInput] = React.useState('');
     const [processing, setProcessing] = React.useState(false);
 
+    React.useEffect(() => {
+        const storedName = localStorage.getItem('name');
+        if (storedName) setNameInput(storedName);
+
+        const currentSearch = new URLSearchParams(window.location.search);
+        let id = currentSearch.get('id');
+
+        if (id) localStorage.setItem('id', id);
+        else id = localStorage.getItem('id');
+
+        if (!id) {
+            router.replace('/create');
+            return;
+        }
+
+        context?.setLoading(true);
+        context?.api.getCommunity(id)
+            .then((community: any) => {
+                if (!community) {
+                    router.replace('/create');
+                    return;
+                }
+                context?.setCommunity(community);
+            })
+            .finally(() => context?.setLoading(false));
+    }, [router]);
+
     async function submit() {
         setProcessing(true);
         localStorage.setItem("name", nameInput.trim());
@@ -32,7 +59,7 @@ export default function Welcome() {
                 <CardContent className="highlightedCard">
                     <Typography gutterBottom variant="h5">
                         {t('routes.welcome.welcome_message')}<br/>
-                        {'Meine Community'}
+                        {context?.community?.name || ''}
                     </Typography>
                     <Box className="flex flex-col gap-5" >
                         <Box>
