@@ -1,0 +1,22 @@
+.topbar-logo {
+    width: 42px;
+    height: 42px;
+    background: url("/assets/logo.png") top left no-repeat;
+    background-size: 42px 42px;
+}
+
+ .topbar-subbar {
+    background-color: #2E7D32;
+    min-height: 30px;
+    max-height: 30px;
+ }
+
+ .dish-carousel-anim-idle {
+    transition: transform 0s;
+    transform: translateX(0px);
+}
+
+.dish-carousel-anim-shifted {
+    transition: transform 2s ease-in-out;
+    transform: translateX(-122px);
+}

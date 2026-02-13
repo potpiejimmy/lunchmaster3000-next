@@ -1,0 +1,1028 @@
+"use client";
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Checkbox,
+  Divider,
+  IconButton,
+  Link,
+  Slider,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { useTranslation } from "react-i18next";
+import StarIcon from "@mui/icons-material/Star";
+import { useRouter } from "next/navigation";
+import AppContext from "../AppContext";
+import InfoIcon from "@mui/icons-material/Info";
+import ShareIcon from "@mui/icons-material/Share";
+import AddIcon from "@mui/icons-material/Add";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import SendIcon from "@mui/icons-material/Send";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import PrintIcon from "@mui/icons-material/Print";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import { io, Socket } from "socket.io-client";
+import moment from "moment";
+import Cropper, { Area, Point } from "react-easy-crop";
+
+type OrderInputMap = Record<string, { order: string; price: string }>;
+type AdminInputMap = Record<string, { comment: string; payLink: string; fee: string }>;
+
+export default function Main() {
+  const context = React.useContext(AppContext);
+  const { t } = useTranslation();
+  const router = useRouter();
+
+  const socketRef = useRef<Socket | null>(null);
+  const orderTypingRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const adminTypingRef = useRef<Record<string, NodeJS.Timeout>>({});
+
+  const [data, setData] = useState<any>({ locations: [], ordersets: {}, chat: [] });
+  const [typing, setTyping] = useState(false);
+  const [locationEditor, setLocationEditor] = useState<any | null>(null);
+  const [locationProcessing, setLocationProcessing] = useState(false);
+  const [mainChatInput, setMainChatInput] = useState("");
+  const [orderInputs, setOrderInputs] = useState<OrderInputMap>({});
+  const [orderChatInputs, setOrderChatInputs] = useState<Record<string, string>>({});
+  const [adminInputs, setAdminInputs] = useState<AdminInputMap>({});
+  const [visibleEditLocationId, setVisibleEditLocationId] = useState<string | number | null>(null);
+  const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+
+  const currentName = context?.name || (typeof window !== "undefined" ? localStorage.getItem("name") : "") || "";
+  const orderSets = useMemo(() => Object.values<any>(data.ordersets || {}), [data.ordersets]);
+
+  useEffect(() => {
+    const currentSearch = new URLSearchParams(window.location.search);
+    let id = currentSearch.get("id");
+    const storedName = localStorage.getItem("name");
+
+    if (id) localStorage.setItem("id", id);
+    else id = localStorage.getItem("id");
+
+    if (!id) {
+      router.replace("/create");
+      return;
+    }
+
+    context?.setLoading(true);
+    context
+      ?.api.getCommunity(id)
+      .then(async (community: any) => {
+        if (!community) {
+          router.replace("/create");
+          return;
+        }
+
+        context?.setCommunity(community);
+        if (!storedName) {
+          router.replace("/welcome");
+          return;
+        }
+
+        context?.setName(storedName);
+        await startup(community.webid);
+      })
+      .finally(() => context?.setLoading(false));
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
+    };
+  }, [router]);
+
+  async function startup(webid: string): Promise<void> {
+    initSocket(webid);
+    await load();
+    try {
+      await Notification.requestPermission();
+    } catch {}
+  }
+
+  function initSocket(webid: string) {
+    if (socketRef.current) socketRef.current.close();
+
+    const socket = io((process.env.NEXT_PUBLIC_SOCKET_IO_URL || "http://localhost:3000/") + webid, {
+      path: process.env.NEXT_PUBLIC_SOCKET_IO_PATH || "/api/socket.io",
+    });
+    socketRef.current = socket;
+
+    socket.on("reconnect", async () => adaptDataFromServer(await context?.api.getData()));
+    socket.on("data", (serverData) => {
+      if (!typing) adaptDataFromServer(serverData);
+    });
+    socket.on("push", async (msg) => {
+      if (msg.name !== currentName) {
+        new Notification(msg.title, {
+          body: msg.type !== "chat" ? t("push." + msg.body, msg.params) : msg.body,
+          requireInteraction: msg.type !== "chat",
+        });
+      }
+    });
+  }
+
+  async function load(): Promise<void> {
+    const loaded = await context?.api.getData();
+    setData(loaded);
+    hydrateInputs(loaded);
+  }
+
+  function hydrateInputs(currentData: any) {
+    const nextOrderInputs: OrderInputMap = {};
+    const nextAdminInputs: AdminInputMap = {};
+
+    for (const orderSet of Object.values<any>(currentData?.ordersets || {})) {
+      const ownOrder = orderSet?.orders?.[currentName];
+      nextOrderInputs[orderSet.id] = {
+        order: ownOrder?.order || "",
+        price: ownOrder?.price?.toString?.() || "",
+      };
+      nextAdminInputs[orderSet.id] = {
+        comment: orderSet?.comment || "",
+        payLink: orderSet?.payLink || "",
+        fee: orderSet?.fee?.toString?.() || "",
+      };
+    }
+
+    setOrderInputs((old) => ({ ...nextOrderInputs, ...old }));
+    setAdminInputs((old) => ({ ...nextAdminInputs, ...old }));
+  }
+
+  async function adaptDataFromServer(serverData: any) {
+    setData((previous: any) => {
+      const next = {
+        ...previous,
+        locations: serverData?.locations || [],
+        chat: serverData?.chat || [],
+        ordersets: { ...(previous?.ordersets || {}) },
+      };
+
+      for (const orderSet of Object.values<any>(serverData?.ordersets || {})) {
+        if (!next.ordersets[orderSet.id]) next.ordersets[orderSet.id] = orderSet;
+        else {
+          const existing = next.ordersets[orderSet.id];
+          existing.orders = orderSet.orders;
+          existing.finished = orderSet.finished;
+          existing.arrived = orderSet.arrived;
+          existing.chat = orderSet.chat;
+          existing.comment = orderSet.comment;
+          existing.payLink = orderSet.payLink;
+          existing.fee = orderSet.fee;
+        }
+      }
+
+      for (const oldOrderSet of Object.values<any>(next.ordersets)) {
+        if (!serverData?.ordersets?.[oldOrderSet.id]) delete next.ordersets[oldOrderSet.id];
+      }
+
+      hydrateInputs(next);
+      return { ...next };
+    });
+  }
+
+  function resourcesBaseUrl() {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+    return `${apiBase.replace(/\/+$/, "")}/resources`;
+  }
+
+  function openNewLocation() {
+    setRawImageSrc(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+    setLocationEditor({ name: "", description: "", menu_link: "", delivery_fee: "" });
+  }
+
+  function openEditLocation(location: any) {
+    setRawImageSrc(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+    setLocationEditor({
+      id: location.id,
+      name: location.name || "",
+      description: location.description || "",
+      menu_link: location.menu_link || "",
+      delivery_fee: location.delivery_fee?.toString?.() || "",
+      icon: location.icon,
+    });
+  }
+
+  function cancelLocationEditor() {
+    setLocationProcessing(false);
+    setRawImageSrc(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+    setLocationEditor(null);
+  }
+
+  function onLocationImageChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setRawImageSrc(reader.result as string);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
+    };
+    reader.readAsDataURL(file);
+    event.target.value = "";
+  }
+
+  function onCropComplete(_: Area, areaPixels: Area) {
+    setCroppedAreaPixels(areaPixels);
+  }
+
+  async function createImage(src: string): Promise<HTMLImageElement> {
+    return await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = (error) => reject(error);
+      image.src = src;
+    });
+  }
+
+  async function getCroppedImageDataUrl(imageSrc: string, areaPixels: Area): Promise<string> {
+    const image = await createImage(imageSrc);
+    const canvas = document.createElement("canvas");
+    canvas.width = 120;
+    canvas.height = 80;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return imageSrc;
+
+    ctx.drawImage(
+      image,
+      areaPixels.x,
+      areaPixels.y,
+      areaPixels.width,
+      areaPixels.height,
+      0,
+      0,
+      canvas.width,
+      canvas.height,
+    );
+
+    return canvas.toDataURL("image/jpeg", 0.8);
+  }
+
+  async function applyCroppedImage() {
+    if (!rawImageSrc || !croppedAreaPixels) return;
+    const resizedImage = await getCroppedImageDataUrl(rawImageSrc, croppedAreaPixels);
+    setLocationEditor((previous: any) => ({ ...previous, newIcon: resizedImage }));
+    setRawImageSrc(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+  }
+
+  async function saveLocation() {
+    if (!locationEditor?.name?.trim()) return;
+    setLocationProcessing(true);
+    try {
+      let newIcon = locationEditor.newIcon;
+      if (rawImageSrc && croppedAreaPixels) {
+        newIcon = await getCroppedImageDataUrl(rawImageSrc, croppedAreaPixels);
+      }
+
+      await context?.api.saveLocation({
+        ...locationEditor,
+        newIcon,
+        name: locationEditor.name.trim(),
+        delivery_fee: locationEditor.delivery_fee ? Number(locationEditor.delivery_fee) : 0,
+      });
+      cancelLocationEditor();
+    } finally {
+      setLocationProcessing(false);
+    }
+  }
+
+  async function deleteLocation() {
+    if (!locationEditor?.id) return;
+    if (!window.confirm(`${t("components.location_edit.confirm_deletion_question")}${locationEditor.name}?`)) return;
+    setLocationProcessing(true);
+    try {
+      await context?.api.deleteLocation(locationEditor);
+      cancelLocationEditor();
+    } finally {
+      setLocationProcessing(false);
+    }
+  }
+
+  async function toggleFavorite(location: any, checked: boolean) {
+    await context?.api.setFavorite(location.id, currentName, checked);
+  }
+
+  async function takeOrders(location: any) {
+    await context?.api.createOrderSet(location, currentName, localStorage.getItem("paylink") || "");
+  }
+
+  function onOrderInputChange(orderSetId: string, field: "order" | "price", value: string) {
+    const next = {
+      ...(orderInputs[orderSetId] || { order: "", price: "" }),
+      [field]: value,
+    };
+
+    setOrderInputs((previous) => ({ ...previous, [orderSetId]: next }));
+
+    clearTimeout(orderTypingRef.current[orderSetId]);
+    setTyping(true);
+    orderTypingRef.current[orderSetId] = setTimeout(async () => {
+      await context?.api.setOrder(orderSetId, currentName, {
+        order: next.order,
+        price: next.price ? Number(next.price) : 0,
+      });
+      setTyping(false);
+    }, 700);
+  }
+
+  function onAdminInputChange(orderSetId: string, field: "comment" | "payLink" | "fee", value: string) {
+    const next = {
+      ...(adminInputs[orderSetId] || { comment: "", payLink: "", fee: "" }),
+      [field]: value,
+    };
+
+    setAdminInputs((previous) => ({ ...previous, [orderSetId]: next }));
+
+    clearTimeout(adminTypingRef.current[orderSetId]);
+    setTyping(true);
+    adminTypingRef.current[orderSetId] = setTimeout(async () => {
+      localStorage.setItem("paylink", next.payLink || "");
+      await context?.api.updateOrderSetComment(orderSetId, {
+        comment: next.comment,
+        payLink: next.payLink,
+        fee: next.fee ? Number(next.fee) : 0,
+      });
+      setTyping(false);
+    }, 700);
+  }
+
+  async function finishOrderSet(orderSetId: string) {
+    await context?.api.updateOrderSet(orderSetId, true);
+  }
+
+  async function reopenOrderSet(orderSetId: string) {
+    await context?.api.updateOrderSet(orderSetId, false, false);
+  }
+
+  async function arriveOrderSet(orderSetId: string) {
+    await context?.api.updateOrderSet(orderSetId, true, true);
+  }
+
+  async function deleteOrderSet(orderSet: any) {
+    if (!window.confirm(`${t("components.orderset.confirm_deletion_question")}${orderSet.location?.name || ""}?`)) return;
+    await context?.api.deleteOrderSet(orderSet.id);
+  }
+
+  async function toggleMoneyReceived(orderSet: any, userName: string, checked: boolean) {
+    const updatedOrder = { ...(orderSet.orders?.[userName] || {}), moneyReceived: checked };
+    await context?.api.setOrder(orderSet.id, userName, updatedOrder);
+  }
+
+  async function sendMainChat() {
+    const msg = mainChatInput.trim();
+    if (!msg) return;
+    await context?.api.sendChatMsg(null, currentName, msg);
+    setMainChatInput("");
+  }
+
+  async function sendOrderChat(orderSetId: string) {
+    const msg = (orderChatInputs[orderSetId] || "").trim();
+    if (!msg) return;
+    await context?.api.sendChatMsg(orderSetId, currentName, msg);
+    setOrderChatInputs((previous) => ({ ...previous, [orderSetId]: "" }));
+  }
+
+  function feePerPerson(orderSet: any) {
+    const fee = Number(orderSet?.fee || 0);
+    const participants = Object.keys(orderSet?.orders || {}).length;
+    if (!fee || !participants) return 0;
+    return participants > 1 ? Math.ceil((fee / participants) * 100) / 100 : fee;
+  }
+
+  function totalPerPerson(orderSet: any, price: number) {
+    return Number(price || 0) + feePerPerson(orderSet);
+  }
+
+  function formatMoney(value: number) {
+    return (value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function escapeHtml(value: string) {
+    return (value || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
+  function printOrderList(orderSet: any) {
+    const fee = feePerPerson(orderSet);
+    const rows = Object.entries<any>(orderSet?.orders || {})
+      .map(([entryName, entryOrder]) => {
+        const total = totalPerPerson(orderSet, Number(entryOrder?.price || 0));
+        return `
+          <tr>
+            <td>${escapeHtml(entryName)}</td>
+            <td>${escapeHtml(entryOrder?.order || "")}</td>
+            <td class="right">${escapeHtml(formatMoney(Number(entryOrder?.price || 0)))}</td>
+            <td class="right">${escapeHtml(formatMoney(fee))}</td>
+            <td class="right"><b>${escapeHtml(formatMoney(total))}</b></td>
+            <td>${entryOrder?.moneyReceived ? "✓" : ""}</td>
+          </tr>`;
+      })
+      .join("");
+
+    const popup = window.open("", "_blank", "width=900,height=700");
+    if (!popup) return;
+
+    popup.document.write(`
+      <!doctype html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>${escapeHtml(orderSet.location?.name || "Order List")}</title>
+        <style>
+          body { font-family: 'PT Sans', Arial, sans-serif; padding: 20px; color: #212121; }
+          h1 { margin: 0 0 6px 0; font-size: 24px; }
+          .sub { margin: 0 0 16px 0; color: #555; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #d0d0d0; padding: 8px; text-align: left; font-size: 14px; }
+          th { background: #f3f3f3; font-weight: 700; }
+          .right { text-align: right; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <h1>${escapeHtml(orderSet.location?.name || "Order List")}</h1>
+        <p class="sub">${escapeHtml(t("components.orderset.subtitle_1", { name: orderSet.name, location: orderSet.location?.name || "" }))}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>${escapeHtml(t("general.name"))}</th>
+              <th>${escapeHtml(t("components.orderset.user_order_request"))}</th>
+              <th class="right">${escapeHtml(t("components.orderset.price"))}</th>
+              <th class="right">${escapeHtml(t("general.fee"))}</th>
+              <th class="right">${escapeHtml(t("components.orderset.total"))}</th>
+              <th>${escapeHtml(t("components.orderset.money_received"))}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `);
+    popup.document.close();
+    popup.focus();
+    popup.print();
+  }
+
+  return (
+    <Box className="flex flex-col gap-4">
+      {orderSets.map((orderSet: any) => {
+        const isOwn = orderSet?.name === currentName;
+        const orderEntries = Object.entries<any>(orderSet?.orders || {});
+        const headerImage = orderSet.location?.icon ? `${resourcesBaseUrl()}/${orderSet.location.icon}.png` : "/assets/placeholder.jpg";
+
+        return (
+          <Card key={orderSet.id} sx={{ backgroundColor: "#e7f1e4" }}>
+            <CardContent>
+              <Box className="flex flex-col lg:flex-row gap-3 lg:gap-2">
+                <Box className="w-full lg:w-[70%] flex flex-col gap-3">
+                  <Box className="flex flex-row items-start gap-3" sx={{ mb: 0.5 }}>
+                    <Box sx={{ ml: 1 }}>
+                      <img src={headerImage} alt={orderSet.location?.name || "location"} width={96} height={64} />
+                    </Box>
+                    <Box className="grow">
+                      <Typography sx={{ fontSize: "1rem", lineHeight: "30px", fontWeight: 500 }}>{orderSet.location?.name}</Typography>
+                      {orderSet.location?.description && <Typography sx={{ color: "text.secondary", m: 0 }}>{orderSet.location.description}</Typography>}
+                      {orderSet.location?.menu_link && (
+                        <Link target="_blank" href={orderSet.location.menu_link} sx={{ fontSize: "0.85rem" }}>
+                          {t("general.menucard")}
+                        </Link>
+                      )}
+                    </Box>
+                  </Box>
+
+                  <Typography sx={{ color: "text.secondary" }}>
+                    {t("components.orderset.subtitle_1", { name: orderSet.name, location: orderSet.location?.name })}
+                  </Typography>
+                  <Typography sx={{ color: "text.secondary" }}>{t("components.orderset.subtitle_2")}</Typography>
+
+                  {isOwn && (
+                    <Box className="flex flex-col gap-2">
+                      <TextField
+                        variant="standard"
+                        label={t("components.orderset.comment")}
+                        value={adminInputs[orderSet.id]?.comment || ""}
+                        onChange={(event) => onAdminInputChange(orderSet.id, "comment", event.target.value)}
+                      />
+                      <Box className="flex flex-col sm:flex-row gap-3">
+                        <TextField
+                          fullWidth
+                          variant="standard"
+                          label={t("components.orderset.paylink")}
+                          value={adminInputs[orderSet.id]?.payLink || ""}
+                          onChange={(event) => onAdminInputChange(orderSet.id, "payLink", event.target.value)}
+                        />
+                        <TextField
+                          variant="standard"
+                          type="number"
+                          label={t("general.fee")}
+                          value={adminInputs[orderSet.id]?.fee || ""}
+                          inputProps={{ style: { textAlign: "right" } }}
+                          onChange={(event) => onAdminInputChange(orderSet.id, "fee", event.target.value)}
+                        />
+                      </Box>
+                    </Box>
+                  )}
+
+                  {!orderSet.finished && (
+                    <Card className="highlightedCard" sx={{ backgroundColor: "#fafad2", m: 0, mb: 1 }}>
+                      <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
+                        <Typography variant="h6" sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                          <EditIcon sx={{ fontSize: "1.1rem", mr: 0.5 }} />
+                          {t("components.orderset.yourorder")}
+                        </Typography>
+                        <Box className="flex flex-col sm:flex-row gap-3">
+                          <TextField
+                            fullWidth
+                            variant="standard"
+                            label={isOwn ? t("components.orderset.ownorder_1") : t("components.orderset.ownorder_2")}
+                            value={orderInputs[orderSet.id]?.order || ""}
+                            onChange={(event) => onOrderInputChange(orderSet.id, "order", event.target.value)}
+                          />
+                          <TextField
+                            variant="standard"
+                            type="number"
+                            label={t("components.orderset.price")}
+                            value={orderInputs[orderSet.id]?.price || ""}
+                            inputProps={{ style: { textAlign: "right" } }}
+                            onChange={(event) => onOrderInputChange(orderSet.id, "price", event.target.value)}
+                          />
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <Card sx={{ backgroundColor: "white", m: 0, mb: 1 }}>
+                    <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
+                      <Box className="flex flex-row items-center">
+                        <Typography variant="h6">{t("components.orderset.list")}</Typography>
+                        <Box className="grow" />
+                        <IconButton size="small" title={t("general.print")} onClick={() => printOrderList(orderSet)}>
+                          <PrintIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                      <Divider sx={{ mb: 1 }} />
+                      <Box
+                        className="hidden sm:grid gap-2 pb-1 border-b border-gray-300"
+                        sx={{
+                          gridTemplateColumns: "130px minmax(180px,1fr) 90px 110px 90px 160px",
+                          fontWeight: 700,
+                          fontSize: "0.8rem",
+                        }}
+                      >
+                        <Typography variant="caption" sx={{ fontWeight: 700 }}>{t("general.name")}</Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 700 }}>{t("components.orderset.user_order_request")}</Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 700, textAlign: "right" }}>{t("components.orderset.price")}</Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 700, textAlign: "right" }}>{t("general.fee")}</Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 700, textAlign: "right" }}>{t("components.orderset.total")}</Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 700 }}>{t("components.orderset.money_received")}</Typography>
+                      </Box>
+                      <Box className="flex flex-col gap-2">
+                        {orderEntries.map(([entryName, entryOrder]) => {
+                          const fee = feePerPerson(orderSet);
+                          const total = totalPerPerson(orderSet, Number(entryOrder?.price || 0));
+                          const showPayNow = orderSet.finished && orderSet.payLink && entryName === currentName && orderSet.name !== currentName && total > 0;
+
+                          return (
+                            <Box key={`${orderSet.id}-${entryName}`} className="border-b border-gray-200 pb-1">
+                              <Box
+                                className="hidden sm:grid items-center gap-2"
+                                sx={{
+                                  gridTemplateColumns: "130px minmax(180px,1fr) 90px 110px 90px 160px",
+                                  minHeight: 44,
+                                }}
+                              >
+                                <Typography><b>{entryName}</b></Typography>
+                                <Typography>{entryOrder?.order || ""}</Typography>
+                                <Typography sx={{ textAlign: "right" }}>{formatMoney(Number(entryOrder?.price || 0))}</Typography>
+                                <Typography sx={{ textAlign: "right" }}>{formatMoney(fee)}</Typography>
+                                <Box sx={{ textAlign: "right" }}>
+                                  <Typography sx={{ textAlign: "right" }}><b>{formatMoney(total)}</b></Typography>
+                                  {showPayNow && (
+                                    <Link href={`${orderSet.payLink}/${Math.round(total * 100) / 100}`} target="_blank">
+                                      {t("components.orderset.pay_now")}
+                                    </Link>
+                                  )}
+                                </Box>
+                                <Box sx={{ minHeight: 42, display: "flex", alignItems: "center" }}>
+                                  {orderSet.finished && entryName !== orderSet.name && (
+                                    <Checkbox
+                                      size="small"
+                                      checked={Boolean(entryOrder?.moneyReceived)}
+                                      disabled={!isOwn}
+                                      onChange={(event) => toggleMoneyReceived(orderSet, entryName, event.target.checked)}
+                                    />
+                                  )}
+                                </Box>
+                              </Box>
+
+                              <Box className="sm:hidden flex flex-col gap-1">
+                                <Typography><b>{entryName}</b></Typography>
+                                <Typography>{entryOrder?.order || ""}</Typography>
+                                <Typography variant="caption">{t("components.orderset.price")}: {formatMoney(Number(entryOrder?.price || 0))}</Typography>
+                                <Typography variant="caption">{t("general.fee")}: {formatMoney(fee)}</Typography>
+                                <Typography variant="caption"><b>{t("components.orderset.total")}: {formatMoney(total)}</b></Typography>
+                                {showPayNow && (
+                                  <Link href={`${orderSet.payLink}/${Math.round(total * 100) / 100}`} target="_blank">
+                                    {t("components.orderset.pay_now")}
+                                  </Link>
+                                )}
+                                {orderSet.finished && entryName !== orderSet.name && (
+                                  <Box className="flex flex-row items-center">
+                                    <Checkbox
+                                      checked={Boolean(entryOrder?.moneyReceived)}
+                                      disabled={!isOwn}
+                                      onChange={(event) => toggleMoneyReceived(orderSet, entryName, event.target.checked)}
+                                    />
+                                    <Typography variant="caption">{t("components.orderset.money_received")}</Typography>
+                                  </Box>
+                                )}
+                              </Box>
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                    </CardContent>
+                  </Card>
+
+                  {orderSet.finished && (
+                    <Card sx={{ m: 0, mb: 0.5, backgroundColor: "#2E7D32", color: "white" }}>
+                      <CardContent sx={{ py: 1.2, "&:last-child": { pb: 1.2 } }}>
+                        {!orderSet.arrived && (
+                          <Typography>
+                            {t("components.orderset.order_finished")} {isOwn ? t("components.orderset.order_finished_own") : t("components.orderset.order_finished_not_own")}
+                          </Typography>
+                        )}
+                        {orderSet.arrived && (
+                          <Typography variant="h6" sx={{ display: "flex", alignItems: "center", color: "white" }}>
+                            <LocationOnIcon sx={{ mr: 0.5 }} />
+                            {t("components.orderset.food_arrived_msg")}
+                          </Typography>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <Box className="flex flex-row flex-wrap gap-2">
+                    {isOwn && !orderSet.finished && orderEntries.length > 0 && (
+                      <Button variant="contained" onClick={() => finishOrderSet(orderSet.id)}>
+                        {t("components.orderset.finish_order")}
+                      </Button>
+                    )}
+                    {isOwn && orderSet.finished && !orderSet.arrived && (
+                      <Button variant="contained" onClick={() => arriveOrderSet(orderSet.id)}>
+                        {t("components.orderset.food_arrived_btn")}
+                      </Button>
+                    )}
+                    {isOwn && orderSet.finished && !orderSet.arrived && (
+                      <Button variant="outlined" onClick={() => reopenOrderSet(orderSet.id)}>
+                        {t("components.orderset.order_reopen")}
+                      </Button>
+                    )}
+                    {isOwn && (
+                      <Button color="error" variant="outlined" onClick={() => deleteOrderSet(orderSet)}>
+                        {t("components.orderset.order_delete")}
+                      </Button>
+                    )}
+                  </Box>
+                </Box>
+
+                <Box className="w-full lg:w-[30%]">
+                  <Card className="highlightedCard" sx={{ backgroundColor: "#fafad2", m: 0 }}>
+                    <CardContent>
+                      <Typography variant="h6">{t("components.orderset.chat")}</Typography>
+                      <Box className="max-h-48 overflow-auto my-2 flex flex-col gap-2">
+                        {(orderSet.chat || []).map((msg: any, index: number) => (
+                          <Box key={`${orderSet.id}-chat-${index}`}>
+                            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                              {msg.name} [{moment(msg.date).fromNow()}]
+                            </Typography>
+                            <Typography>{msg.msg}</Typography>
+                          </Box>
+                        ))}
+                      </Box>
+                      <Box className="flex flex-row items-center gap-2">
+                        <TextField
+                          fullWidth
+                          variant="standard"
+                          label={t("components.orderset.chat_msg")}
+                          value={orderChatInputs[orderSet.id] || ""}
+                          onChange={(event) => setOrderChatInputs((previous) => ({ ...previous, [orderSet.id]: event.target.value }))}
+                          onKeyDown={(event) => (event.key === "Enter" ? sendOrderChat(orderSet.id) : undefined)}
+                        />
+                        <IconButton onClick={() => sendOrderChat(orderSet.id)}>
+                          <SendIcon />
+                        </IconButton>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        );
+      })}
+
+      <Box className="flex flex-col lg:flex-row gap-4 lg:gap-2">
+        <Card className="w-full lg:w-[70%]">
+          <CardContent>
+            <Typography gutterBottom variant="h5">
+              <Box className="flex flex-row items-center gap-1">
+                <StarIcon />
+                {t("routes.main.favorite_list")}
+              </Box>
+            </Typography>
+
+            <Box className="flex flex-col gap-4">
+            {data?.locations?.length > 0 && (
+              <Box>
+                <Typography sx={{ color: "text.secondary" }} gutterBottom>
+                  {t("routes.main.hello", { name: currentName })}
+                </Typography>
+                <Typography sx={{ color: "text.secondary" }}>
+                  {t("routes.main.welcome_text_1")}
+                  <br />
+                  {t("routes.main.welcome_text_2")} <i>{t("routes.main.welcome_text_3")}</i>. {t("routes.main.welcome_text_4")}
+                </Typography>
+              </Box>
+            )}
+
+            {(!data?.locations?.length && !context?.loading) && (
+              <Card>
+                <CardContent className="highlightedCard">
+                  <Typography sx={{ color: "text.secondary" }} gutterBottom>
+                    <InfoIcon />&nbsp;{t("routes.main.community_new")}
+                  </Typography>
+                  <Typography sx={{ color: "text.secondary" }} gutterBottom>
+                    {t("routes.main.invite_colleagues_1")}&nbsp;<ShareIcon fontSize="small" />&nbsp;
+                    {t("routes.main.invite_colleagues_2")} {t("routes.main.invite_colleagues_3")} {t("routes.main.invite_colleagues_4")}
+                  </Typography>
+                  <Typography sx={{ color: "text.secondary" }}>{t("routes.main.invite_colleagues_5")}</Typography>
+                </CardContent>
+              </Card>
+            )}
+
+            <Box className="flex flex-col gap-2">
+              {(data.locations || []).map((location: any) => {
+                const checked = (location.votes || []).includes(currentName);
+                const locationImage = location.icon ? `${resourcesBaseUrl()}/${location.icon}.png` : "/assets/placeholder.jpg";
+                const showEdit = visibleEditLocationId === location.id;
+
+                return (
+                  <Box key={location.id} className="border-b border-gray-200 pb-3">
+                    <Box className="flex flex-row items-start gap-3">
+                      <Checkbox checked={checked} onChange={(event) => toggleFavorite(location, event.target.checked)} />
+                      <button
+                        type="button"
+                        onClick={() => toggleFavorite(location, !checked)}
+                        className="hidden sm:block border-0 bg-transparent p-0 cursor-pointer"
+                        aria-label={t("routes.main.favorite_list")}
+                      >
+                        <img src={locationImage} alt={location.name} width={96} height={64} />
+                      </button>
+                      <Box
+                        className="grow"
+                        onMouseEnter={() => setVisibleEditLocationId(location.id)}
+                        onMouseLeave={() => setVisibleEditLocationId(null)}
+                        onClick={() => setVisibleEditLocationId(location.id)}
+                      >
+                        <Box className="flex flex-row items-center gap-1">
+                          <Typography sx={{ fontSize: "1rem", lineHeight: "1.5rem", fontWeight: 500 }}>{location.name}</Typography>
+                          <IconButton
+                            size="small"
+                            onClick={() => openEditLocation(location)}
+                            sx={{ opacity: showEdit ? 1 : 0, transition: "opacity .2s", p: 0.25 }}
+                            title={t("general.edit")}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                        {location.description && <Typography sx={{ color: "text.secondary", m: 0 }}>{location.description}</Typography>}
+                        {location.menu_link && (
+                          <Link href={location.menu_link} target="_blank" sx={{ fontSize: "0.85rem" }}>
+                            {t("general.menucard")}
+                          </Link>
+                        )}
+                        <Box className="sm:hidden mt-1" sx={{ fontSize: "0.78rem" }}>
+                          {(location.votes || []).map((voteName: string) => (
+                            <Box key={`${location.id}-vote-mobile-${voteName}`} className="leading-4">
+                              ⭐ {voteName}
+                            </Box>
+                          ))}
+                        </Box>
+                      </Box>
+                      <Box className="hidden sm:flex flex-col items-end gap-3 min-w-[120px]">
+                        <Box sx={{ fontSize: "0.78rem" }} className="flex flex-col items-end">
+                          {(location.votes || []).map((voteName: string) => (
+                            <Box key={`${location.id}-vote-${voteName}`} className="flex flex-row items-center gap-1 leading-4 justify-end">
+                              <Typography sx={{ color: "text.secondary", fontSize: "1em" }}>
+                                {voteName}
+                              </Typography>
+                              <StarIcon sx={{ color: "warning.main", fontSize: "1rem" }} />
+                            </Box>
+                          ))}
+                        </Box>
+                        {Boolean((location.votes || []).length) && (
+                          <Button variant="contained" onClick={() => takeOrders(location)}>
+                            {t("components.location.placeorder")}
+                          </Button>
+                        )}
+                      </Box>
+                    </Box>
+                    <Box className="sm:hidden flex justify-end mt-2">
+                      {Boolean((location.votes || []).length) && (
+                        <Button variant="contained" onClick={() => takeOrders(location)}>
+                          {t("components.location.placeorder")}
+                        </Button>
+                      )}
+                    </Box>
+                    <Typography sx={{ fontSize: "0.75rem", mt: "0.3em", textAlign: "right", color: "text.secondary" }}>
+                      {location.order_count
+                        ? t("components.location.order_count", { order_count: location.order_count })
+                        : t("components.location.no_order_count")}
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Box>
+
+            <Box className="flex flex-col gap-4 items-start">
+              <Button variant="contained" title={t("routes.main.add_new_location")} onClick={openNewLocation}>
+                <AddIcon />
+                {(!data?.locations?.length) && <span>&nbsp;{t("components.location_edit.new_location")}</span>}
+              </Button>
+            </Box>
+
+            {locationEditor && (
+              <Card>
+                <CardContent className="highlightedCard">
+                  <Box className="flex flex-col gap-3">
+                    <Typography variant="h6">
+                      {locationEditor.id ? t("components.location_edit.edit", { name: locationEditor.name }) : t("components.location_edit.new_location")}
+                    </Typography>
+                    <TextField
+                      variant="standard"
+                      label="Name"
+                      value={locationEditor.name || ""}
+                      onChange={(event) => setLocationEditor((previous: any) => ({ ...previous, name: event.target.value }))}
+                    />
+                    <TextField
+                      variant="standard"
+                      label={t("components.location_edit.shortdescription")}
+                      value={locationEditor.description || ""}
+                      onChange={(event) => setLocationEditor((previous: any) => ({ ...previous, description: event.target.value }))}
+                    />
+                    <TextField
+                      variant="standard"
+                      label={t("components.location_edit.menu_link")}
+                      value={locationEditor.menu_link || ""}
+                      onChange={(event) => setLocationEditor((previous: any) => ({ ...previous, menu_link: event.target.value }))}
+                    />
+                    <TextField
+                      variant="standard"
+                      label={t("general.fee")}
+                      type="number"
+                      value={locationEditor.delivery_fee || ""}
+                      onChange={(event) => setLocationEditor((previous: any) => ({ ...previous, delivery_fee: event.target.value }))}
+                    />
+                    <Box className="flex flex-col gap-1">
+                      <input type="file" accept="image/*" onChange={onLocationImageChange} />
+                      {rawImageSrc && (
+                        <Box className="flex flex-col gap-2">
+                          <Box sx={{ position: "relative", width: "100%", height: 280, backgroundColor: "#000" }}>
+                            <Cropper
+                              image={rawImageSrc}
+                              crop={crop}
+                              zoom={zoom}
+                              aspect={3 / 2}
+                              cropShape="rect"
+                              showGrid={false}
+                              onCropChange={setCrop}
+                              onCropComplete={onCropComplete}
+                              onZoomChange={setZoom}
+                            />
+                          </Box>
+                          <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                            Zoom
+                          </Typography>
+                          <Slider min={1} max={3} step={0.1} value={zoom} onChange={(_, value) => setZoom(value as number)} />
+                          <Box className="flex flex-row gap-2">
+                            <Button variant="outlined" onClick={applyCroppedImage}>
+                              Apply
+                            </Button>
+                            <Button
+                              variant="text"
+                              onClick={() => {
+                                setRawImageSrc(null);
+                                setCrop({ x: 0, y: 0 });
+                                setZoom(1);
+                                setCroppedAreaPixels(null);
+                              }}
+                            >
+                              {t("general.cancel")}
+                            </Button>
+                          </Box>
+                        </Box>
+                      )}
+                      {locationEditor.newIcon && <img src={locationEditor.newIcon} alt="new-location" width={120} />}
+                    </Box>
+                    <Box className="flex flex-row gap-2">
+                      <Button variant="contained" disabled={locationProcessing || !locationEditor.name?.trim()} onClick={saveLocation}>
+                        {t("general.save")}
+                      </Button>
+                      <Button variant="outlined" disabled={locationProcessing} onClick={cancelLocationEditor}>
+                        {t("general.cancel")}
+                      </Button>
+                      {locationEditor.id && (
+                        <Button color="error" variant="outlined" disabled={locationProcessing} onClick={deleteLocation}>
+                          <DeleteIcon />&nbsp;{t("general.delete")}
+                        </Button>
+                      )}
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography sx={{ color: "text.secondary" }}>
+                  <InfoIcon />&nbsp;{t("routes.main.hint_title")}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Typography sx={{ color: "text.secondary" }}>
+                  {t("routes.main.hint_1")}
+                  {t("routes.main.hint_2")}
+                </Typography>
+              </AccordionDetails>
+            </Accordion>
+            </Box>
+          </CardContent>
+        </Card>
+
+        <Box className="w-full lg:w-[30%]">
+          <Card sx={{ backgroundColor: "#fafad2", m: 0 }}>
+            <CardContent>
+              <Typography variant="h6">{t("components.orderset.chat")}</Typography>
+              <Box className="max-h-56 overflow-auto my-2 flex flex-col gap-2">
+                {(data.chat || []).map((msg: any, index: number) => (
+                  <Box key={`main-chat-${index}`}>
+                    <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                      {msg.name} [{moment(msg.date).fromNow()}]
+                    </Typography>
+                    <Typography>{msg.msg}</Typography>
+                  </Box>
+                ))}
+              </Box>
+              <Box className="flex flex-row items-center gap-2">
+                <TextField
+                  fullWidth
+                  variant="standard"
+                  label={t("components.orderset.chat_msg")}
+                  value={mainChatInput}
+                  onChange={(event) => setMainChatInput(event.target.value)}
+                  onKeyDown={(event) => (event.key === "Enter" ? sendMainChat() : undefined)}
+                />
+                <IconButton onClick={sendMainChat}>
+                  <SendIcon />
+                </IconButton>
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
+      </Box>
+    </Box>
+  );
+}

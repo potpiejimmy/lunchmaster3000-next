@@ -1,0 +1,176 @@
+{
+    "general": {
+        "save": "Speichern",
+        "cancel": "Abbrechen",
+        "delete": "Löschen",
+        "edit": "Bearbeiten",
+        "print": "Drucken",
+        "settings": "Einstellungen",
+        "menucard": "Speisekarte",
+        "name": "Name",
+        "terms_agree_1": "Ich stimme den",
+        "terms_agree_2": "Nutzungsbedingungen",
+        "terms_agree_3": " zu.",
+        "privacy_read_1": "Ich habe die",
+        "privacy_read_2": "Datenschutzerklärung",
+        "privacy_read_3": " zur Kenntnis genommen.",
+        "donation_btn_source": "https://www.paypalobjects.com/de_DE/i/btn/btn_donate_SM.gif",
+        "donation_text": "Deine Spende erhält die lunch.community am Leben!",
+        "fee": "Liefergebühr",
+        "optional": "optional"
+    },
+    "components": {
+        "footer": {
+            "impressum": "Impressum",
+            "terms": "Nutzungsbedingungen",
+            "cookies": "Datenschutz & Cookies",
+            "allrights": "https://lunch.community"
+        },
+        "topbar": {
+            "copy_link": "Link kopieren: {{communityLink}}",
+            "link_copied": "Der Link zu dieser Community wurde in die Zwischenablage kopiert.",
+            "slogan": "„Was essen wir heute Mittag?“"
+        },
+        "location_edit": {
+            "edit": "Bearbeite: {{name}}",
+            "new_location": "Neue Location hinzufügen",
+            "shortdescription": "Kurzbeschreibung / Infos",
+            "menu_link": "Link zur Speisekarte",
+            "confirm_deletion_header": "Löschen bestätigen",
+            "confirm_deletion_question": "Willst du wirklich folgende Location löschen: ",
+            "confirm_deletion_no": "Nein",
+            "confirm_deletion_yes": "Ja, löschen"
+
+        },
+        "location": {
+            "placeorder": "Bestellungen aufnehmen",
+            "order_count":"Hier habt ihr schon {{order_count}} mal bestellt",
+            "no_order_count":"Hier habt ihr noch nie bestellt"
+        },
+        "orderset": {
+            "subtitle_1": "{{name}} bestellt heute bzw. holt heute etwas bei {{location}}.",
+            "subtitle_2": "Wenn du etwas mitbestellen möchtest, schreibe es unten hin.",
+            "subtitle_menu_card": "Hier ist die",
+            "comment": "Bestellhinweise / Infos",
+            "comment_hint": "Optionale Hinweise für die anderen Teilnehmer",
+            "paylink": "Bezahllink",
+            "paylink_hint": "Zum Beispiel: https://paypal.me/yourname",
+            "fee_hint": "Wird auf alle aufgeteilt",
+            "incl_fee": "inkl. Liefergebühr",
+            "total": "Zu zahlen",
+            "subtitle_infos": "Infos von {{name}}",
+            "yourorder": "Deine Bestellung",
+            "ownorder_1": "Dein eigener Bestellwunsch",
+            "ownorder_2": "Was möchtest du haben?",
+            "ownorder_delete": "Bestellwunsch entfernen",
+            "price": "Preis",
+            "list": "Gesamtliste",
+            "user_order_request": "Bestellwunsch",
+			"pay_now": "Jetzt bezahlen",
+            "money_received": "Geld erhalten",
+            "sum": "Gesamt",
+            "order_finished": "Die Bestellung ist beendet. Sobald das Essen da ist,",
+            "order_finished_own": "drücke auf den Knopf!",
+            "order_finished_not_own": "erhältst du eine Nachricht!",
+            "finish_order": "Bestellannahme beenden",
+            "food_arrived_btn": "Essen ist da!!",
+            "food_arrived_msg": "Das Essen ist da!!",
+            "order_delete": "Bestellung löschen",
+            "order_reopen": "Bestellannahme wiedereröffnen",
+            "chat": "Chat",
+            "chat_msg": "Deine Nachricht",
+            "chat_msg_send": "Nachricht absenden",
+            "confirm_deletion_header": "Löschen bestätigen",
+            "confirm_deletion_question": "Willst du wirklich folgende Bestellung löschen: ",
+            "confirm_deletion_no": "Nein!",
+            "confirm_deletion_yes": "Ja, löschen!"
+        },
+        "coil": {
+            "icon_button_text": "Hol dir deine XRP!",
+            "info_text": "Glückwunsch! Du hast erfolgreich deine erste Bestellung beendet! Klicke einfach auf das XRP Icon, um dir den Bonus für deine erste Bestellung zu holen!"
+        }
+    },
+    "routes": {
+        "create": {
+            "welcome_text": "Willkommen",
+            "welcome_subtitle_1": "Finde dich mit deinen Arbeitskollegen zum Mittagessen zusammen.",
+            "welcome_subtitle_2": "Nie wieder hungern. Nie wieder lange überlegen, wer heute auf was Lust hat. Nie wieder alleine essen. Nie wieder beim Bestellen vergessen werden.",
+            "create_community_text": "Gründe hier deine lunch.community",
+            "create_community_subtitle": "Lege hier eine neue Community für dein Team oder deine Organisation an. Den erstellten Link teilst du dann mit deinen Kollegen.",
+            "community_name": "Name deiner Community",
+            "create_community_button": "Community erstellen",
+            "join_community": "Du kannst auch einer bestehenden Community beitreten. Bitte klicke dazu hier:",
+            "join_community_link": "beitreten"
+        },
+        "main": {
+            "favorite_list": "Favoritenliste",
+            "hello": "Hallo {{name}},",
+            "welcome_text_1": "bitte wähle aus, auf was du heute Appetit hast. Mehrfachauswahl ist möglich.",
+            "welcome_text_2": "Wenn du dich dazu entscheidest, Essen für dich und deine Kollegen bei einem der Restaurants zu bestellen und abzuholen oder liefern zu lassen, dann drücke auf",
+            "welcome_text_3": "Bestellungen aufnehmen",
+            "welcome_text_4": "Ansonsten warte einfach, bis ein anderer dies tut, dann kannst du dich anschließen.",
+            "hint_title": "Hinweise zur Verwendung dieser Website",
+            "hint_1": "Du musst diese Website nicht neu laden (sie aktualisiert sich von alleine) und alles, was du anklickst und eintippst, ist für deine Commmunity sofort sichtbar,",
+            "hint_2": "auch ohne dass du die Eingabe-Taste dazu drücken musst (Ausnahme: Chatnachricht absenden).",
+            "community_new": "Diese Community scheint noch neu zu sein.",
+            "invite_colleagues_1": "Bitte lade deine Kollegen zu dieser Community ein, indem du den Link zu dieser Community über das Teilen-Symbol",
+            "invite_colleagues_2": "oben in der Titelzeile kopierst und an deine Kollegen sendest. Der Link enthält eine geheime, eindeutige ID zu dieser",
+            "invite_colleagues_3": "Community. Bitte sorge dafür, dass nur die Personen deines Teams oder deiner lokalen Organisation den Link kennen,",
+            "invite_colleagues_4": "damit deine Community nicht von Fremden missbraucht wird.",
+            "invite_colleagues_5": "Füge dann bitte unten über das Plus-Symbol neue Essens-Locations hinzu, um deine Community mit Leben",
+            "invite_colleagues_6": "zu füllen.",
+            "add_new_location": "Neue Location hinzufügen",
+            "community_id_does_not_exist": "Sorry, wir haben keine Community mit diesem Link gefunden."
+        },
+        "settings": {
+            "card_title": "Deine aktuelle lunch.community",
+            "community_leave": "Community verlassen",
+            "your_name": "Dein Name",
+            "confirm_deletion_header": "Verlassen bestätigen",
+            "confirm_deletion_question": "Willst du wirklich folgende Community verlassen: ",
+            "confirm_deletion_no": "Nein, ich will bleiben!",
+            "confirm_deletion_yes": "Ja, raus hier!"
+        },
+        "welcome": {
+            "welcome_message": "Willkommen bei der lunch.community von",
+            "welcome_new_user": "Du bist neu hier. Bitte gib einen Namen ein, damit deine Kollegen dich erkennen können.",
+            "ask_for_name": "Wie heißt du?",
+            "hint_title": "Hinweise zur Verwendung deines Namens",
+            "hint_1": "Dein Name wird nicht zentral, sondern nur in deinem Browser gespeichert und dient nur der ",
+            "hint_2": "Kenntlichmachung deiner Bestellwünsche gegenüber den anderen. Üblicherweise reicht hier z.B. dein Vorname. Achte aber darauf, dass der Name",
+            "hint_3": "innerhalb deiner Community eindeutig ist, denn er dient auch als Identifikation für deine Person.",
+            "hungry": "Ich habe Hunger!"
+        },
+        "about": {
+            "company_name":"My EV Ride GbR - Thorsten Liese und Daniel Siedentopf",
+            "company_street": "Bindingstr. 16, 60598 Frankfurt am Main",
+            "company_country": "Deutschland",
+            "mail_contact": "Kontakt:"
+        },
+        "join": {
+            "title": "Einer bestehenden Community beitreten",
+            "subtitle": "Bitte trage den Link zu der Community, der du beitreten willst, unten in das Feld ein.",
+            "community_link": "Link zu der Community",
+            "join_community_button": "Community beitreten",
+            "error": "Dies ist kein Link zu einer Community!"
+        },
+        "xrptip": {
+            "title": "Hol' dir deine XRP!",
+            "subtitle": "Bitte trage deinen Tipbot-Namen ein und wähle dein Netwerk aus.",
+            "xrphandle": "XrpTipbot Username",
+            "claim_reward": "Hol dir jetzt deine XRP!",
+            "tip_sent": "Wir haben dir einen Tip gesendet! Vielen Dank für deine Unterstützung! :)",
+            "error_no_coil": "Anscheinend hast du kein Coil. Leider kannst du keine XRP claimen.",
+            "error_tip_yourself": "Danke, aber leider können wir uns nicht selbst einen Tip senden :)",
+            "error_tipbot_disabled": "Sorry, dieser Nutzer hat seinen XRPTipbot Account deaktiviert.",
+            "error_unknown_user": "Sorry, aber dieser User hat noch keinen XRPTipbot Account.",
+            "error_already_tipped": "Sorry, aber du hast schon die XRP erhalten! Du kannst aktuell leider nur einmal teilnehmen.",
+            "error_no_balance": "Sorry, wir haben leider nicht mehr genug XRP um dir einen Tip zu senden.",
+            "error_generic_response": "Leider ist etwas schwiefgelaufen."
+        }
+    },
+    "push": {
+        "is_taking_orders": "{{name}} bestellt heute bei {{place}}",
+        "food_arrived": "Das Essen ist da!"
+    }
+}

@@ -1,12 +1,12 @@
 import AppShell from "@/src/providers/AppShell";
 import AppProviders from "@/src/providers/AppProviders";
-import Main from "@/src/routes/Main";
+import XrpTip from "@/src/routes/XrpTip";
 
-export default function Home() {
+export default function XrpTipPage() {
   return (
     <AppProviders>
       <AppShell>
-        <Main />
+        <XrpTip />
       </AppShell>
     </AppProviders>
   );

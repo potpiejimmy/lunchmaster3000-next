@@ -1,12 +1,12 @@
 import AppShell from "@/src/providers/AppShell";
 import AppProviders from "@/src/providers/AppProviders";
-import Main from "@/src/routes/Main";
+import Create from "@/src/routes/Create";
 
-export default function Home() {
+export default function CreatePage() {
   return (
     <AppProviders>
       <AppShell>
-        <Main />
+        <Create />
       </AppShell>
     </AppProviders>
   );

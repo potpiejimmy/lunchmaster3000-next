@@ -1,12 +1,12 @@
 import AppShell from "@/src/providers/AppShell";
 import AppProviders from "@/src/providers/AppProviders";
-import Main from "@/src/routes/Main";
+import Privacy from "@/src/routes/Privacy";
 
-export default function Home() {
+export default function PrivacyPage() {
   return (
     <AppProviders>
       <AppShell>
-        <Main />
+        <Privacy />
       </AppShell>
     </AppProviders>
   );

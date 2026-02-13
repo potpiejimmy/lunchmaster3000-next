@@ -1,12 +1,12 @@
 import AppShell from "@/src/providers/AppShell";
 import AppProviders from "@/src/providers/AppProviders";
-import Main from "@/src/routes/Main";
+import About from "@/src/routes/About";
 
-export default function Home() {
+export default function AboutPage() {
   return (
     <AppProviders>
       <AppShell>
-        <Main />
+        <About />
       </AppShell>
     </AppProviders>
   );

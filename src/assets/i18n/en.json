@@ -1,0 +1,175 @@
+{
+    "general": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "edit": "Edit",
+        "print": "Print",
+        "settings": "Settings",
+        "menucard": "Menu",
+        "name": "Name",
+        "terms_agree_1": "I agree to the",
+        "terms_agree_2": "Terms & Conditions",
+        "terms_agree_3": ".",
+        "privacy_read_1": "I acknowledge the",
+        "privacy_read_2": "Privacy & Cookies",
+        "privacy_read_3": " statement.",
+        "donation_btn_source": "https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif",
+        "donation_text": "Your donation keeps the lunch.community alive!",
+        "fee": "Delivery fee",
+        "optional": "optional"
+    },
+    "components": {
+        "footer": {
+            "impressum": "About",
+            "terms": "Terms & Conditions",
+            "cookies": "Privacy & Cookies",
+            "allrights": "https://lunch.community"
+        },
+        "topbar": {
+            "copy_link": "Copy link: {{communityLink}}",
+            "link_copied": "The link to this community was copied to your clipboard.",
+            "slogan": "“What are we having for lunch today?”"
+        },
+        "location_edit": {
+            "edit": "Edit: {{name}}",
+            "new_location": "Add new place",
+            "shortdescription": "Short description / info",
+            "menu_link": "Link to the menu",
+            "confirm_deletion_header": "Confirm Deletion",
+            "confirm_deletion_question": "Are you sure you want to delete ",
+            "confirm_deletion_no": "No",
+            "confirm_deletion_yes": "Yes, delete"
+        },
+        "location": {
+            "placeorder": "Take orders",
+            "order_count": "You've ordered here {{order_count}} times",
+            "no_order_count":"You've never ordered here"
+        },
+        "orderset": {
+            "subtitle_1": "{{name}} is taking orders for {{location}} today.",
+            "subtitle_2": "If you'd like to have something from that place, put it into the text field below.",
+            "subtitle_menu_card": "Click here for the",
+            "comment": "Info / your remarks",
+            "comment_hint": "Optional info for the other participants",
+            "paylink": "Payment link",
+            "paylink_hint": "For example: https://paypal.me/yourname",
+            "fee_hint": "Split among participants",
+            "incl_fee": "incl. delivery fee",
+            "total": "To pay",
+            "subtitle_infos": "{{name}}'s remarks",
+            "yourorder": "Your order",
+            "ownorder_1": "Your own order",
+            "ownorder_2": "What are you having?",
+            "ownorder_delete": "Delete order",
+            "price": "Price",
+            "list": "Order list",
+            "user_order_request": "Order",
+			"pay_now": "Pay now",
+            "money_received": "Money received",
+            "sum": "Total",
+            "order_finished": "Ordering has been closed. As soon as the food arrives,",
+            "order_finished_own": "hit the button!",
+            "order_finished_not_own": "you will be notified!",
+            "finish_order": "Finish taking orders",
+            "food_arrived_btn": "Lunch is here!!",
+            "food_arrived_msg": "Lunch is here!!",
+            "order_delete": "Delete all",
+            "order_reopen": "Reopen orders",
+            "chat": "Chat",
+            "chat_msg": "Your message",
+            "chat_msg_send": "Send message",
+            "confirm_deletion_header": "Confirm deletion",
+            "confirm_deletion_question": "Are you sure you want to delete the order at  ",
+            "confirm_deletion_no": "No!",
+            "confirm_deletion_yes": "Yes, delete it!"
+        },
+        "coil": {
+            "icon_button_text": "Get your XRP!",
+            "info_text": "Congratulations, you have finished your first order! Click the XRP icon to claim your reward for your first successful order!"
+        }
+    },
+    "routes": {
+        "create": {
+            "welcome_text": "Welcome",
+            "welcome_subtitle_1": "Get together with your co-workers for lunch.",
+            "welcome_subtitle_2": "Stop the tiresome day-to-day discussions about what and where. No more eating alone. No more missing out on a lunch. No more being hungry.",
+            "create_community_text": "Found your lunch.community",
+            "create_community_subtitle": "Create the lunch community for your team or organization here. Then, share the link to your community with your co-workers and friends.",
+            "community_name": "Your community's name",
+            "create_community_button": "Create community",
+            "join_community": "You can also join an exisiting community. Please click here:",
+            "join_community_link": "join"
+        },
+        "main": {
+            "favorite_list": "Today's favorites",
+            "hello": "Hi {{name}},",
+            "welcome_text_1": "please choose your favorite food places for today. You can select one or more places - anything you are in the mood for.",
+            "welcome_text_2": "If you feel like ordering or picking up food for you and your co-workers from one of the places, please press ",
+            "welcome_text_3": "Take orders",
+            "welcome_text_4": "Otherwise, just wait until someone else presses the button and then you can join in.",
+            "hint_title": "Notes regarding the usage of this website",
+            "hint_1": "You never need to reload this website and anything you click or type will be immediately visible to your community ",
+            "hint_2": "without pressing the Enter button (except when sending out chat messages).",
+            "community_new": "This community seems to be newly-created.",
+            "invite_colleagues_1": "Please invite your co-workers and friends to this lunch community by clicking the share symbol",
+            "invite_colleagues_2": "in the topbar. The link to this community will be copied to your clipboard and contains a secret unique ID to this community.",
+            "invite_colleagues_3": "Please make sure to share the link only with people from your team or your local organization to avoid ",
+            "invite_colleagues_4": "misuse by others.",
+            "invite_colleagues_5": "Please add places to your community to get going. Press the '+' symbol below to add a new place.",
+            "invite_colleagues_6": "",
+            "add_new_location": "Add new place",
+            "community_id_does_not_exist": "Sorry, we didn't find a community with this link."
+        },
+        "settings": {
+            "card_title": "Your current lunch.community",
+            "community_leave": "Leave community",
+            "your_name": "Your Name",
+            "confirm_deletion_header": "Confirm leaving",
+            "confirm_deletion_question": "Are you sure you want to leave the lunch.community  ",
+            "confirm_deletion_no": "No, stay!",
+            "confirm_deletion_yes": "Yes, leave!"
+        },
+        "welcome": {
+            "welcome_message": "Welcome to the lunch.community of",
+            "welcome_new_user": "You are new here. Please enter your name so your co-workers know who you are.",
+            "ask_for_name": "What's your name?",
+            "hint_title": "Click here for info about how we use your name",
+            "hint_1": "Your name is not stored on our servers. It is only stored in your current browser instance and it is used ",
+            "hint_2": "to identify your orders. Usually your first name should be sufficient, but since the name is also used as an ",
+            "hint_3": "identification for your person, your should make sure it is unique within your community.",
+            "hungry": "I'm hungry!"
+        },
+        "about": {
+            "company_name":"My EV Ride GbR - Thorsten Liese und Daniel Siedentopf",
+            "company_street": "Bindingstr. 16, 60598 Frankfurt am Main",
+            "company_country": "Germany",
+            "mail_contact": "Contact:"
+        },
+        "join": {
+            "title": "Join an existing community",
+            "subtitle": "Please insert the link to the community into the field below.",
+            "community_link": "Community link",
+            "join_community_button": "Join community",
+            "error": "This is not a valid link for a community!"
+        },
+        "xrptip": {
+            "title": "Claim your XRP",
+            "subtitle": "Please enter your XRPTipbot user name and select your network.",
+            "xrphandle": "XRPTipbot user name",
+            "claim_reward": "Claim your XRP now!",
+            "tip_sent": "We have sent you a tip! Thank you for your support! :)",
+            "error_no_coil": "It seems like you don't have Coil. Sorry but you cannot claim any XRP.",
+            "error_tip_yourself": "Thank you! But unfortunately we cannot tip ourself :)",
+            "error_tipbot_disabled": "Sorry, this user has diabled his XRPTipbot account",
+            "error_unknown_user": "Sorry but this user does not have a XRPTipbot account.",
+            "error_already_tipped": "Sorry but you have claimed your XRP already. You can only participate once at this time.",
+            "error_no_balance": "Sorry, but our balance is not enough to send you this tip :-(",
+            "error_generic_response": "Sorry, something went wrong."
+        }
+    },
+    "push": {
+        "is_taking_orders": "{{name}} is taking orders for {{place}}",
+        "food_arrived": "Lunch is here!"
+    }
+}

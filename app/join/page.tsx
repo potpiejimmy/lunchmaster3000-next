@@ -1,12 +1,12 @@
 import AppShell from "@/src/providers/AppShell";
 import AppProviders from "@/src/providers/AppProviders";
-import Main from "@/src/routes/Main";
+import Join from "@/src/routes/Join";
 
-export default function Home() {
+export default function JoinPage() {
   return (
     <AppProviders>
       <AppShell>
-        <Main />
+        <Join />
       </AppShell>
     </AppProviders>
   );

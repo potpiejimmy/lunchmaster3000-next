@@ -1,12 +1,12 @@
 import AppShell from "@/src/providers/AppShell";
 import AppProviders from "@/src/providers/AppProviders";
-import Main from "@/src/routes/Main";
+import Settings from "@/src/routes/Settings";
 
-export default function Home() {
+export default function SettingsPage() {
   return (
     <AppProviders>
       <AppShell>
-        <Main />
+        <Settings />
       </AppShell>
     </AppProviders>
   );
