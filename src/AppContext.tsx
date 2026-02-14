@@ -4,6 +4,7 @@ import LmApi from './api/LmApi';
 interface AppContextType {
     api: LmApi,
     loading: boolean, setLoading: any,
+    serverUnavailable: boolean, setServerUnavailable: any,
     agreeTerms: boolean, setAgreeTerms: any,
     agreePrivacy: boolean, setAgreePrivacy: any,
     community: any, setCommunity: any,

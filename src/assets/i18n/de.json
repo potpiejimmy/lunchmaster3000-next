@@ -17,7 +17,9 @@
         "donation_btn_source": "https://www.paypalobjects.com/de_DE/i/btn/btn_donate_SM.gif",
         "donation_text": "Deine Spende erhält die lunch.community am Leben!",
         "fee": "Liefergebühr",
-        "optional": "optional"
+        "optional": "optional",
+        "loading": "Lade…",
+        "server_unavailable": "Der lunch.community Server ist aktuell wegen Netzwerkproblemen nicht erreichbar. Bitte versuche es gleich erneut."
     },
     "components": {
         "footer": {
@@ -44,6 +46,7 @@
         },
         "location": {
             "placeorder": "Bestellungen aufnehmen",
+            "ordering_in_progress": "Bestellung läuft",
             "order_count":"Hier habt ihr schon {{order_count}} mal bestellt",
             "no_order_count":"Hier habt ihr noch nie bestellt"
         },
@@ -120,7 +123,9 @@
             "invite_colleagues_5": "Füge dann bitte unten über das Plus-Symbol neue Essens-Locations hinzu, um deine Community mit Leben",
             "invite_colleagues_6": "zu füllen.",
             "add_new_location": "Neue Location hinzufügen",
-            "community_id_does_not_exist": "Sorry, wir haben keine Community mit diesem Link gefunden."
+            "community_id_does_not_exist": "Sorry, wir haben keine Community mit diesem Link gefunden.",
+            "server_unavailable_title": "Server aktuell nicht erreichbar",
+            "server_unavailable_text": "Der lunch.community Server ist derzeit aufgrund von Netzwerkproblemen nicht erreichbar. Bitte prüfe deine Verbindung und versuche es gleich erneut."
         },
         "settings": {
             "card_title": "Deine aktuelle lunch.community",

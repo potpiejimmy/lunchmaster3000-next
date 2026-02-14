@@ -50,6 +50,10 @@ export default function Main() {
   const orderTypingRef = useRef<Record<string, NodeJS.Timeout>>({});
   const adminTypingRef = useRef<Record<string, NodeJS.Timeout>>({});
   const orderInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const orderSetCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const creatingOrderSetLocationIdsRef = useRef<Set<string>>(new Set());
+  const pendingOpenOrderSetLocationIdsRef = useRef<Set<string>>(new Set());
+  const pendingOpenOrderSetTimeoutsRef = useRef<Record<string, number>>({});
   const previousOrderSetIdsRef = useRef<string[]>([]);
   const locationEditorScrollAnchorRef = useRef<HTMLDivElement | null>(null);
   const locationNameInputRef = useRef<HTMLInputElement | null>(null);
@@ -65,6 +69,8 @@ export default function Main() {
   const [adminInputs, setAdminInputs] = useState<AdminInputMap>({});
   const [visibleEditLocationId, setVisibleEditLocationId] = useState<string | number | null>(null);
   const [pendingOrderSetDeletion, setPendingOrderSetDeletion] = useState<any | null>(null);
+  const [creatingOrderSetLocationId, setCreatingOrderSetLocationId] = useState<string | null>(null);
+  const [pendingOpenOrderSetLocationIds, setPendingOpenOrderSetLocationIds] = useState<string[]>([]);
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -87,6 +93,31 @@ export default function Main() {
     }
 
     previousOrderSetIdsRef.current = currentIds;
+  }, [orderSets]);
+
+  useEffect(() => {
+    const openLocationIds = new Set(
+      orderSets
+        .filter((orderSet: any) => !orderSet?.finished)
+        .map((orderSet: any) => String(orderSet?.location?.id || ""))
+        .filter(Boolean),
+    );
+
+    let changed = false;
+    for (const locationId of Array.from(pendingOpenOrderSetLocationIdsRef.current)) {
+      if (!openLocationIds.has(locationId)) continue;
+      pendingOpenOrderSetLocationIdsRef.current.delete(locationId);
+      const timeoutId = pendingOpenOrderSetTimeoutsRef.current[locationId];
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+        delete pendingOpenOrderSetTimeoutsRef.current[locationId];
+      }
+      changed = true;
+    }
+
+    if (changed) {
+      setPendingOpenOrderSetLocationIds(Array.from(pendingOpenOrderSetLocationIdsRef.current));
+    }
   }, [orderSets]);
 
   useEffect(() => {
@@ -377,7 +408,50 @@ export default function Main() {
   }
 
   async function takeOrders(location: any) {
-    await context?.api.createOrderSet(location, currentName, localStorage.getItem("paylink") || "");
+    const locationId = String(location?.id || "");
+    if (!locationId) return;
+    if (creatingOrderSetLocationIdsRef.current.has(locationId)) return;
+    if (pendingOpenOrderSetLocationIdsRef.current.has(locationId)) return;
+    if (creatingOrderSetLocationId === locationId) return;
+
+    const openOrderSet = orderSets.find((orderSet: any) => !orderSet?.finished && String(orderSet?.location?.id || "") === locationId);
+    if (openOrderSet?.id) {
+      scrollToOrderSet(openOrderSet.id);
+      return;
+    }
+
+    pendingOpenOrderSetLocationIdsRef.current.add(locationId);
+    setPendingOpenOrderSetLocationIds(Array.from(pendingOpenOrderSetLocationIdsRef.current));
+    creatingOrderSetLocationIdsRef.current.add(locationId);
+    setCreatingOrderSetLocationId(locationId);
+    let created = false;
+    try {
+      await context?.api.createOrderSet(location, currentName, localStorage.getItem("paylink") || "");
+      created = true;
+    } finally {
+      creatingOrderSetLocationIdsRef.current.delete(locationId);
+      setCreatingOrderSetLocationId(null);
+
+      if (!created) {
+        pendingOpenOrderSetLocationIdsRef.current.delete(locationId);
+        setPendingOpenOrderSetLocationIds(Array.from(pendingOpenOrderSetLocationIdsRef.current));
+        return;
+      }
+
+      const existingTimeout = pendingOpenOrderSetTimeoutsRef.current[locationId];
+      if (existingTimeout) window.clearTimeout(existingTimeout);
+      pendingOpenOrderSetTimeoutsRef.current[locationId] = window.setTimeout(() => {
+        pendingOpenOrderSetLocationIdsRef.current.delete(locationId);
+        delete pendingOpenOrderSetTimeoutsRef.current[locationId];
+        setPendingOpenOrderSetLocationIds(Array.from(pendingOpenOrderSetLocationIdsRef.current));
+      }, 8000);
+    }
+  }
+
+  function scrollToOrderSet(orderSetId: string | number) {
+    const target = orderSetCardRefs.current[String(orderSetId)];
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function onOrderInputChange(orderSetId: string, field: "order" | "price", value: string) {
@@ -581,6 +655,23 @@ export default function Main() {
     popup.print();
   }
 
+  if (context?.serverUnavailable) {
+    return (
+      <Card sx={{ backgroundColor: "warning.light", border: "1px solid", borderColor: "warning.main" }}>
+        <CardContent sx={{ py: { xs: 4, sm: 5 } }}>
+          <Box className="flex flex-col gap-3 items-start">
+            <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+              {t("routes.main.server_unavailable_title")}
+            </Typography>
+            <Typography sx={{ fontSize: { xs: "1.05rem", sm: "1.2rem" }, lineHeight: 1.5 }}>
+              {t("routes.main.server_unavailable_text")}
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Box className="flex flex-col gap-4">
       {orderSets.map((orderSet: any) => {
@@ -590,7 +681,13 @@ export default function Main() {
         const headerImage = orderSet.location?.icon ? `${resourcesBaseUrl()}/${orderSet.location.icon}.png` : "/assets/placeholder.jpg";
 
         return (
-          <Card key={orderSet.id} sx={{ backgroundColor: "#e7f1e4" }}>
+          <Card
+            key={orderSet.id}
+            ref={(element: HTMLDivElement | null) => {
+              orderSetCardRefs.current[String(orderSet.id)] = element;
+            }}
+            sx={{ backgroundColor: "#e7f1e4" }}
+          >
             <CardContent>
               <Box className="flex flex-col lg:flex-row gap-3 lg:gap-2">
                 <Box className="w-full lg:w-[70%] flex flex-col gap-3">
@@ -899,6 +996,13 @@ export default function Main() {
                 const checked = (location.votes || []).includes(currentName);
                 const locationImage = location.icon ? `${resourcesBaseUrl()}/${location.icon}.png` : "/assets/placeholder.jpg";
                 const showEdit = visibleEditLocationId === location.id;
+                const locationId = String(location.id);
+                const openOrderSetForLocation = orderSets.find(
+                  (orderSet: any) => !orderSet?.finished && String(orderSet?.location?.id || "") === locationId,
+                );
+                const hasPendingOpenOrderSet = pendingOpenOrderSetLocationIds.includes(locationId);
+                const hasOrderingInProgress = Boolean(openOrderSetForLocation) || hasPendingOpenOrderSet;
+                const isCreatingOrderSet = creatingOrderSetLocationId === locationId;
 
                 return (
                   <Box key={location.id} className="border-b border-gray-200 pb-3">
@@ -955,17 +1059,45 @@ export default function Main() {
                           ))}
                         </Box>
                         {Boolean((location.votes || []).length) && (
-                          <Button variant="contained" onClick={() => takeOrders(location)}>
-                            {t("components.location.placeorder")}
-                          </Button>
+                          hasOrderingInProgress ? (
+                            <Button
+                              variant="contained"
+                              onClick={() => (openOrderSetForLocation ? scrollToOrderSet(openOrderSetForLocation.id) : undefined)}
+                              disabled={!openOrderSetForLocation}
+                            >
+                              {t("components.location.ordering_in_progress")}
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="contained"
+                              onClick={() => takeOrders(location)}
+                              disabled={isCreatingOrderSet}
+                            >
+                              {t("components.location.placeorder")}
+                            </Button>
+                          )
                         )}
                       </Box>
                     </Box>
                     <Box className="sm:hidden flex justify-end mt-2">
                       {Boolean((location.votes || []).length) && (
-                        <Button variant="contained" onClick={() => takeOrders(location)}>
-                          {t("components.location.placeorder")}
-                        </Button>
+                        hasOrderingInProgress ? (
+                          <Button
+                            variant="contained"
+                            onClick={() => (openOrderSetForLocation ? scrollToOrderSet(openOrderSetForLocation.id) : undefined)}
+                            disabled={!openOrderSetForLocation}
+                          >
+                            {t("components.location.ordering_in_progress")}
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="contained"
+                            onClick={() => takeOrders(location)}
+                            disabled={isCreatingOrderSet}
+                          >
+                            {t("components.location.placeorder")}
+                          </Button>
+                        )
                       )}
                     </Box>
                     <Typography sx={{ fontSize: "0.75rem", mt: "0.3em", textAlign: "right", color: "text.secondary" }}>

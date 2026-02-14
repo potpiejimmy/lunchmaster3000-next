@@ -17,7 +17,9 @@
         "donation_btn_source": "https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif",
         "donation_text": "Your donation keeps the lunch.community alive!",
         "fee": "Delivery fee",
-        "optional": "optional"
+        "optional": "optional",
+        "loading": "Loading…",
+        "server_unavailable": "The lunch.community server is currently unavailable due to network problems. Please try again in a moment."
     },
     "components": {
         "footer": {
@@ -43,6 +45,7 @@
         },
         "location": {
             "placeorder": "Take orders",
+            "ordering_in_progress": "Ordering in progress",
             "order_count": "You've ordered here {{order_count}} times",
             "no_order_count":"You've never ordered here"
         },
@@ -119,7 +122,9 @@
             "invite_colleagues_5": "Please add places to your community to get going. Press the '+' symbol below to add a new place.",
             "invite_colleagues_6": "",
             "add_new_location": "Add new place",
-            "community_id_does_not_exist": "Sorry, we didn't find a community with this link."
+            "community_id_does_not_exist": "Sorry, we didn't find a community with this link.",
+            "server_unavailable_title": "Server currently unavailable",
+            "server_unavailable_text": "The lunch.community server cannot be reached right now due to network problems. Please check your connection and try again in a moment."
         },
         "settings": {
             "card_title": "Your current lunch.community",
