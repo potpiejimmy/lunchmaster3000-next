@@ -43,10 +43,16 @@ import Cropper, { Area, Point } from "react-easy-crop";
 type OrderInputMap = Record<string, { order: string; price: string }>;
 type AdminInputMap = Record<string, { comment: string; payLink: string; fee: string }>;
 
-function ThinCheckboxOutlineIcon(props: SvgIconProps) {
+function ThinStarOutlineIcon(props: SvgIconProps) {
   return (
     <SvgIcon {...props} viewBox="0 0 24 24">
-      <rect x="3.5" y="3.5" width="17" height="17" rx="2" ry="2" fill="none" stroke="currentColor" strokeWidth="0.9" />
+      <path
+        d="M12 3.8l2.62 5.3 5.85.85-4.24 4.13 1 5.82L12 17.1 6.77 19.9l1-5.82-4.24-4.13 5.85-.85L12 3.8z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
     </SvgIcon>
   );
 }
@@ -743,7 +749,12 @@ export default function Main() {
                       <Typography sx={{ fontSize: "1.35rem", lineHeight: 1.25, fontWeight: 500 }}>{orderSet.location?.name}</Typography>
                       {orderSet.location?.description && <Typography sx={{ color: "text.secondary", m: 0 }}>{orderSet.location.description}</Typography>}
                       {orderSet.location?.menu_link && (
-                        <Link target="_blank" href={orderSet.location.menu_link} sx={{ fontSize: "1rem" }}>
+                        <Link
+                          target="_blank"
+                          href={orderSet.location.menu_link}
+                          underline="none"
+                          sx={{ fontSize: "1rem", color: "primary.main", "&:visited": { color: "primary.main" } }}
+                        >
                           {t("general.menucard")}
                         </Link>
                       )}
@@ -1066,8 +1077,15 @@ export default function Main() {
                       <Checkbox
                         checked={checked}
                         onChange={(event) => toggleFavorite(location, event.target.checked)}
-                        icon={<ThinCheckboxOutlineIcon />}
-                        sx={{ "& .MuiSvgIcon-root": { fontSize: "3rem" } }}
+                        icon={<ThinStarOutlineIcon />}
+                        checkedIcon={<StarIcon />}
+                        sx={{
+                          p: 0,
+                          m: 0,
+                          color: "text.disabled",
+                          "&.Mui-checked": { color: "warning.main" },
+                          "& .MuiSvgIcon-root": { fontSize: "3rem" },
+                        }}
                       />
                       <button
                         type="button"
@@ -1102,7 +1120,12 @@ export default function Main() {
                         </Box>
                         {location.description && <Typography sx={{ color: "text.secondary", m: 0 }}>{location.description}</Typography>}
                         {location.menu_link && (
-                          <Link href={location.menu_link} target="_blank" sx={{ fontSize: "1rem" }}>
+                          <Link
+                            href={location.menu_link}
+                            target="_blank"
+                            underline="none"
+                            sx={{ fontSize: "1rem", color: "primary.main", "&:visited": { color: "primary.main" } }}
+                          >
                             {t("general.menucard")}
                           </Link>
                         )}
