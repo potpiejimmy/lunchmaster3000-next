@@ -18,6 +18,8 @@ import {
   IconButton,
   Link,
   Slider,
+  SvgIcon,
+  SvgIconProps,
   TextField,
   Typography,
 } from "@mui/material";
@@ -40,6 +42,14 @@ import Cropper, { Area, Point } from "react-easy-crop";
 
 type OrderInputMap = Record<string, { order: string; price: string }>;
 type AdminInputMap = Record<string, { comment: string; payLink: string; fee: string }>;
+
+function ThinCheckboxOutlineIcon(props: SvgIconProps) {
+  return (
+    <SvgIcon {...props} viewBox="0 0 24 24">
+      <rect x="3.5" y="3.5" width="17" height="17" rx="2" ry="2" fill="none" stroke="currentColor" strokeWidth="0.9" />
+    </SvgIcon>
+  );
+}
 
 export default function Main() {
   const context = React.useContext(AppContext);
@@ -720,20 +730,20 @@ export default function Main() {
               <Box className="flex flex-col lg:flex-row gap-3 lg:gap-2">
                 <Box className="w-full lg:w-[70%] flex flex-col gap-3">
                   <Box className="flex flex-row items-start gap-3" sx={{ mb: 0.5 }}>
-                    <Box sx={{ ml: 1, flexShrink: 0, width: 96, minWidth: 96 }}>
+                    <Box sx={{ ml: 1, flexShrink: 0, width: 120, minWidth: 120 }}>
                       <img
                         src={headerImage}
                         alt={orderSet.location?.name || "location"}
-                        width={96}
-                        height={64}
-                        style={{ width: 96, height: 64, objectFit: "cover", display: "block" }}
+                        width={120}
+                        height={80}
+                        style={{ width: 120, height: 80, objectFit: "cover", display: "block" }}
                       />
                     </Box>
                     <Box className="grow">
                       <Typography sx={{ fontSize: "1.35rem", lineHeight: 1.25, fontWeight: 500 }}>{orderSet.location?.name}</Typography>
                       {orderSet.location?.description && <Typography sx={{ color: "text.secondary", m: 0 }}>{orderSet.location.description}</Typography>}
                       {orderSet.location?.menu_link && (
-                        <Link target="_blank" href={orderSet.location.menu_link} sx={{ fontSize: "0.85rem" }}>
+                        <Link target="_blank" href={orderSet.location.menu_link} sx={{ fontSize: "1rem" }}>
                           {t("general.menucard")}
                         </Link>
                       )}
@@ -1053,7 +1063,12 @@ export default function Main() {
                 return (
                   <Box key={location.id} className="border-b border-gray-200 pb-3">
                     <Box className="flex flex-row items-start gap-3">
-                      <Checkbox checked={checked} onChange={(event) => toggleFavorite(location, event.target.checked)} />
+                      <Checkbox
+                        checked={checked}
+                        onChange={(event) => toggleFavorite(location, event.target.checked)}
+                        icon={<ThinCheckboxOutlineIcon />}
+                        sx={{ "& .MuiSvgIcon-root": { fontSize: "3rem" } }}
+                      />
                       <button
                         type="button"
                         onClick={() => toggleFavorite(location, !checked)}
@@ -1063,9 +1078,9 @@ export default function Main() {
                         <img
                           src={locationImage}
                           alt={location.name}
-                          width={96}
-                          height={64}
-                          style={{ width: 96, height: 64, objectFit: "cover", display: "block" }}
+                          width={120}
+                          height={80}
+                          style={{ width: 120, height: 80, objectFit: "cover", display: "block" }}
                         />
                       </button>
                       <Box
@@ -1087,7 +1102,7 @@ export default function Main() {
                         </Box>
                         {location.description && <Typography sx={{ color: "text.secondary", m: 0 }}>{location.description}</Typography>}
                         {location.menu_link && (
-                          <Link href={location.menu_link} target="_blank" sx={{ fontSize: "0.85rem" }}>
+                          <Link href={location.menu_link} target="_blank" sx={{ fontSize: "1rem" }}>
                             {t("general.menucard")}
                           </Link>
                         )}
