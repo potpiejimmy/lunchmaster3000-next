@@ -5,10 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:release": "NEXT_PUBLIC_API_URL=https://api.lunch.community/api/v1 NEXT_PUBLIC_SOCKET_IO_URL=https://api.lunch.community/ NEXT_PUBLIC_SOCKET_IO_PATH=/api/socket.io NEXT_PUBLIC_SHARE_URL=https://lunch.community next build",
     "start": "next start",
     "lint": "eslint",
     "push": "git push --follow-tags -v",
-    "release": "standard-version && npm run push && next build && cd out && zip -r dist.zip * && scp dist.zip lunch@lunch.community:httpdocs/ && cd .. && ssh lunch@lunch.community 'cd httpdocs && unzip -o dist.zip'"
+    "release": "standard-version && npm run push && npm run build:release && cd out && zip -r dist.zip * && scp dist.zip lunch@lunch.community:httpdocs/ && cd .. && ssh lunch@lunch.community 'cd httpdocs && unzip -o dist.zip'"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

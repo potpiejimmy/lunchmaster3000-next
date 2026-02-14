@@ -69,6 +69,7 @@ export default function Main() {
   const [adminInputs, setAdminInputs] = useState<AdminInputMap>({});
   const [visibleEditLocationId, setVisibleEditLocationId] = useState<string | number | null>(null);
   const [pendingOrderSetDeletion, setPendingOrderSetDeletion] = useState<any | null>(null);
+  const [pendingLocationDeletion, setPendingLocationDeletion] = useState<any | null>(null);
   const [creatingOrderSetLocationId, setCreatingOrderSetLocationId] = useState<string | null>(null);
   const [pendingOpenOrderSetLocationIds, setPendingOpenOrderSetLocationIds] = useState<string[]>([]);
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
@@ -298,6 +299,7 @@ export default function Main() {
 
   function cancelLocationEditor() {
     setLocationProcessing(false);
+    setPendingLocationDeletion(null);
     setRawImageSrc(null);
     setCrop({ x: 0, y: 0 });
     setZoom(1);
@@ -391,12 +393,22 @@ export default function Main() {
     }
   }
 
-  async function deleteLocation() {
+  function openDeleteLocationConfirm() {
     if (!locationEditor?.id) return;
-    if (!window.confirm(`${t("components.location_edit.confirm_deletion_question")}${locationEditor.name}?`)) return;
+    setPendingLocationDeletion({ id: locationEditor.id, name: locationEditor.name || "" });
+  }
+
+  function closeDeleteLocationConfirm() {
+    setPendingLocationDeletion(null);
+  }
+
+  async function confirmDeleteLocation() {
+    if (!pendingLocationDeletion) return;
+    const locationToDelete = pendingLocationDeletion;
+    closeDeleteLocationConfirm();
     setLocationProcessing(true);
     try {
-      await context?.api.deleteLocation(locationEditor);
+      await context?.api.deleteLocation(locationToDelete);
       cancelLocationEditor();
     } finally {
       setLocationProcessing(false);
@@ -579,6 +591,14 @@ export default function Main() {
     return Number(price || 0) + feePerPerson(orderSet);
   }
 
+  function orderSetSum(orderSet: any) {
+    const ordersSum = Object.values<any>(orderSet?.orders || {}).reduce(
+      (sum, entryOrder) => sum + Number(entryOrder?.price || 0),
+      0,
+    );
+    return ordersSum + Number(orderSet?.fee || 0);
+  }
+
   function formatMoney(value: number) {
     return (value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
@@ -594,6 +614,7 @@ export default function Main() {
 
   function printOrderList(orderSet: any) {
     const fee = feePerPerson(orderSet);
+    const sum = orderSetSum(orderSet);
     const rows = Object.entries<any>(orderSet?.orders || {})
       .map(([entryName, entryOrder]) => {
         const total = totalPerPerson(orderSet, Number(entryOrder?.price || 0));
@@ -626,6 +647,9 @@ export default function Main() {
           th, td { border: 1px solid #d0d0d0; padding: 8px; text-align: left; font-size: 14px; }
           th { background: #f3f3f3; font-weight: 700; }
           .right { text-align: right; }
+          .sum-wrap { margin-top: 10px; text-align: right; }
+          .sum { font-size: 16px; font-weight: 700; }
+          .fee-note { font-size: 12px; color: #555; }
           @media print { body { padding: 0; } }
         </style>
       </head>
@@ -647,6 +671,10 @@ export default function Main() {
             ${rows}
           </tbody>
         </table>
+        <div class="sum-wrap">
+          ${sum > 0 ? `<div class="sum">${escapeHtml(t("components.orderset.sum"))}: ${escapeHtml(formatMoney(sum))}</div>` : ""}
+          ${Number(orderSet?.fee || 0) > 0 ? `<div class="fee-note">${escapeHtml(t("components.orderset.incl_fee"))}: ${escapeHtml(formatMoney(Number(orderSet.fee || 0)))}</div>` : ""}
+        </div>
       </body>
       </html>
     `);
@@ -692,11 +720,17 @@ export default function Main() {
               <Box className="flex flex-col lg:flex-row gap-3 lg:gap-2">
                 <Box className="w-full lg:w-[70%] flex flex-col gap-3">
                   <Box className="flex flex-row items-start gap-3" sx={{ mb: 0.5 }}>
-                    <Box sx={{ ml: 1 }}>
-                      <img src={headerImage} alt={orderSet.location?.name || "location"} width={96} height={64} />
+                    <Box sx={{ ml: 1, flexShrink: 0, width: 96, minWidth: 96 }}>
+                      <img
+                        src={headerImage}
+                        alt={orderSet.location?.name || "location"}
+                        width={96}
+                        height={64}
+                        style={{ width: 96, height: 64, objectFit: "cover", display: "block" }}
+                      />
                     </Box>
                     <Box className="grow">
-                      <Typography sx={{ fontSize: { xs: "1.15rem", sm: "1.35rem" }, lineHeight: 1.25, fontWeight: 500 }}>{orderSet.location?.name}</Typography>
+                      <Typography sx={{ fontSize: "1.35rem", lineHeight: 1.25, fontWeight: 500 }}>{orderSet.location?.name}</Typography>
                       {orderSet.location?.description && <Typography sx={{ color: "text.secondary", m: 0 }}>{orderSet.location.description}</Typography>}
                       {orderSet.location?.menu_link && (
                         <Link target="_blank" href={orderSet.location.menu_link} sx={{ fontSize: "0.85rem" }}>
@@ -806,14 +840,14 @@ export default function Main() {
                         <Typography variant="caption" sx={{ fontWeight: 700, textAlign: "right" }}>{t("components.orderset.total")}</Typography>
                         <Typography variant="caption" sx={{ fontWeight: 700, textAlign: "right" }}>{t("components.orderset.money_received")}</Typography>
                       </Box>
-                      <Box className="flex flex-col gap-2">
+                      <Box className="flex flex-col gap-0">
                         {orderEntries.map(([entryName, entryOrder]) => {
                           const fee = feePerPerson(orderSet);
                           const total = totalPerPerson(orderSet, Number(entryOrder?.price || 0));
                           const showPayNow = orderSet.finished && orderSet.payLink && entryName === currentName && orderSet.name !== currentName && total > 0;
 
                           return (
-                            <Box key={`${orderSet.id}-${entryName}`} className="border-b border-gray-200 pb-1">
+                            <Box key={`${orderSet.id}-${entryName}`} className="border-b border-gray-200">
                               <Box
                                 className="hidden sm:grid items-center gap-1"
                                 sx={{
@@ -870,6 +904,18 @@ export default function Main() {
                             </Box>
                           );
                         })}
+                      </Box>
+                      <Box sx={{ mt: 1, display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                        {orderSetSum(orderSet) > 0 && (
+                          <Typography sx={{ fontSize: "1.15rem", fontWeight: 700 }}>
+                            {t("components.orderset.sum")}: {formatMoney(orderSetSum(orderSet))}
+                          </Typography>
+                        )}
+                        {Number(orderSet?.fee || 0) > 0 && (
+                          <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.72rem" }}>
+                            {t("components.orderset.incl_fee")}: {formatMoney(Number(orderSet.fee || 0))}
+                          </Typography>
+                        )}
                       </Box>
                     </CardContent>
                   </Card>
@@ -1011,10 +1057,16 @@ export default function Main() {
                       <button
                         type="button"
                         onClick={() => toggleFavorite(location, !checked)}
-                        className="hidden sm:block border-0 bg-transparent p-0 cursor-pointer"
+                        className="hidden sm:block border-0 bg-transparent p-0 cursor-pointer shrink-0"
                         aria-label={t("routes.main.favorite_list")}
                       >
-                        <img src={locationImage} alt={location.name} width={96} height={64} />
+                        <img
+                          src={locationImage}
+                          alt={location.name}
+                          width={96}
+                          height={64}
+                          style={{ width: 96, height: 64, objectFit: "cover", display: "block" }}
+                        />
                       </button>
                       <Box
                         className="grow"
@@ -1023,7 +1075,7 @@ export default function Main() {
                         onClick={() => setVisibleEditLocationId(location.id)}
                       >
                         <Box className="flex flex-row items-center gap-1">
-                          <Typography sx={{ fontSize: { xs: "1.1rem", sm: "1.3rem" }, lineHeight: 1.25, fontWeight: 500 }}>{location.name}</Typography>
+                          <Typography sx={{ fontSize: "1.35rem", lineHeight: 1.25, fontWeight: 500 }}>{location.name}</Typography>
                           <IconButton
                             size="small"
                             onClick={() => openEditLocation(location)}
@@ -1237,7 +1289,7 @@ export default function Main() {
                         {t("general.cancel")}
                       </Button>
                       {locationEditor.id && (
-                        <Button color="error" variant="outlined" disabled={locationProcessing} onClick={deleteLocation}>
+                        <Button color="error" variant="outlined" disabled={locationProcessing} onClick={openDeleteLocationConfirm}>
                           <DeleteIcon />&nbsp;{t("general.delete")}
                         </Button>
                       )}
@@ -1315,6 +1367,27 @@ export default function Main() {
           <Button onClick={closeDeleteOrderSetConfirm}>{t("components.orderset.confirm_deletion_no")}</Button>
           <Button color="error" variant="contained" onClick={confirmDeleteOrderSet}>
             {t("components.orderset.confirm_deletion_yes")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(pendingLocationDeletion)}
+        onClose={closeDeleteLocationConfirm}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>{t("components.location_edit.confirm_deletion_header")}</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ color: "text.secondary" }}>
+            {t("components.location_edit.confirm_deletion_question")}
+            {pendingLocationDeletion?.name || ""}?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={closeDeleteLocationConfirm}>{t("components.location_edit.confirm_deletion_no")}</Button>
+          <Button color="error" variant="contained" onClick={confirmDeleteLocation}>
+            {t("components.location_edit.confirm_deletion_yes")}
           </Button>
         </DialogActions>
       </Dialog>
