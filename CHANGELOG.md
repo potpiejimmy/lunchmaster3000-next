@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.2.0](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.1.5...v4.2.0) (2026-02-15)
+
+
+### Features
+
+* added service worker (PWA), decreased typewriter font on mobile ([2cbf69f](https://github.com/potpiejimmy/lunchmaster3000-next/commit/2cbf69f07230e58fe429d62da4bb3303156bed85))
+
 ### [4.1.5](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.1.4...v4.1.5) (2026-02-15)
 
 ### [4.1.4](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.1.3...v4.1.4) (2026-02-15)
