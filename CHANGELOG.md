@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.4.0](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.3.0...v4.4.0) (2026-02-15)
+
+
+### Features
+
+* add name attributes to all text input fields (except chat inputs) ([317bef6](https://github.com/potpiejimmy/lunchmaster3000-next/commit/317bef644d8bb10a042eb676d39555166e865cc0))
+
 ## [4.3.0](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.2.3...v4.3.0) (2026-02-15)
 
 
