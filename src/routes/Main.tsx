@@ -178,6 +178,7 @@ export default function Main() {
         }
 
         context?.setCommunity(community);
+        localStorage.setItem("community", JSON.stringify(community));
         if (!storedName) {
           router.replace("/welcome");
           return;

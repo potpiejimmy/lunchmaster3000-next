@@ -1,13 +1,5 @@
-import AppShell from "@/src/providers/AppShell";
-import AppProviders from "@/src/providers/AppProviders";
 import Main from "@/src/routes/Main";
 
 export default function Home() {
-  return (
-    <AppProviders>
-      <AppShell>
-        <Main />
-      </AppShell>
-    </AppProviders>
-  );
+  return <Main />;
 }

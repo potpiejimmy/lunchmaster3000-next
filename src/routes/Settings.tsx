@@ -17,7 +17,7 @@ export default function Settings() {
     const storedName = localStorage.getItem("name") ?? "";
     setName(storedName);
     context?.setName(storedName);
-  }, []);
+  }, [context]);
 
   React.useEffect(() => {
     const currentSearch = new URLSearchParams(window.location.search);
@@ -33,7 +33,19 @@ export default function Settings() {
 
     if (context?.community?.webid === id) return;
 
-    context?.setLoading(true);
+    const cachedCommunityRaw = localStorage.getItem("community");
+    if (cachedCommunityRaw) {
+      try {
+        const cachedCommunity = JSON.parse(cachedCommunityRaw);
+        if (cachedCommunity?.webid === id) {
+          context?.setCommunity(cachedCommunity);
+          return;
+        }
+      } catch {
+        localStorage.removeItem("community");
+      }
+    }
+
     context?.api.getCommunity(id)
       .then((community: any) => {
         if (!community) {
@@ -41,8 +53,9 @@ export default function Settings() {
           return;
         }
         context?.setCommunity(community);
+        localStorage.setItem("community", JSON.stringify(community));
       })
-      .finally(() => context?.setLoading(false));
+      .catch(() => {});
   }, [router, context]);
 
   React.useEffect(() => {
@@ -55,6 +68,7 @@ export default function Settings() {
 
   function leaveCommunity() {
     localStorage.removeItem("id");
+    localStorage.removeItem("community");
     context?.setCommunity(null);
     context?.setName("");
     router.push("/");
