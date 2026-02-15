@@ -971,7 +971,7 @@ export default function Main() {
                         {t("components.orderset.food_arrived_btn")}
                       </Button>
                     )}
-                    {isOwn && orderSet.finished && !orderSet.arrived && (
+                    {isOwn && orderSet.finished && (
                       <Button variant="outlined" onClick={() => reopenOrderSet(orderSet.id)}>
                         {t("components.orderset.order_reopen")}
                       </Button>
