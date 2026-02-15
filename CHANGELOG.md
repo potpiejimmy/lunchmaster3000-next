@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.3.0](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.2.3...v4.3.0) (2026-02-15)
+
+
+### Features
+
+* show reopen button also when food has arrived ([d0e6bda](https://github.com/potpiejimmy/lunchmaster3000-next/commit/d0e6bda5a031a6e7ceba0c9913d51d15ae26e86b))
+
 ### [4.2.3](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.2.2...v4.2.3) (2026-02-15)
 
 ### [4.2.2](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.2.1...v4.2.2) (2026-02-15)
