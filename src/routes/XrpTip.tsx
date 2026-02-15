@@ -78,12 +78,14 @@ export default function XrpTip() {
           </Typography>
           <Typography sx={{ color: "text.secondary" }}>{t("routes.xrptip.subtitle")}</Typography>
           <TextField
+            name="xrp-handle"
             variant="standard"
             label={t("routes.xrptip.xrphandle")}
             value={handleInput}
             onChange={(event) => setHandleInput(event.target.value)}
           />
           <TextField
+            name="xrp-network"
             select
             variant="standard"
             label="Network"

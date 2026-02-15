@@ -55,6 +55,7 @@ export default function Create() {
                             </Typography>
                         </Box>
                         <TextField autoFocus
+                                    name="community-name"
                                     label={t('routes.create.community_name')}
                                     sx={largerInputSx}
                                     value={nameInput}

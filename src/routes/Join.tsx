@@ -34,6 +34,7 @@ export default function Join() {
                     </Typography>
                     <Box className="flex flex-col gap-5" >
                         <TextField autoFocus
+                                        name="community-link"
                                         label={t('routes.join.community_link')}
                                         sx={largerInputSx}
                                         value={linkInput}

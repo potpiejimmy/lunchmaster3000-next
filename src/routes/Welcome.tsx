@@ -68,6 +68,7 @@ export default function Welcome() {
                             </Typography>
                             </Box>
                         <TextField autoFocus
+                                    name="username"
                                     label={t('routes.welcome.ask_for_name')}
                                     sx={largerInputSx}
                                     value={nameInput}

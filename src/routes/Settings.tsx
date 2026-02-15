@@ -107,6 +107,7 @@ export default function Settings() {
       <Card>
         <CardContent>
           <TextField
+            name="username"
             fullWidth
             variant="standard"
             label={t("routes.settings.your_name")}

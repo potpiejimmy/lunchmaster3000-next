@@ -770,6 +770,7 @@ export default function Main() {
                   {isOwn && (
                     <Box className="flex flex-col gap-2">
                       <TextField
+                        name="order-comment"
                         variant="standard"
                         label={t("components.orderset.comment")}
                         value={adminInputs[orderSet.id]?.comment || ""}
@@ -777,6 +778,7 @@ export default function Main() {
                       />
                       <Box className="flex flex-col sm:flex-row gap-3">
                         <TextField
+                          name="order-paylink"
                           fullWidth
                           variant="standard"
                           label={t("components.orderset.paylink")}
@@ -784,6 +786,7 @@ export default function Main() {
                           onChange={(event) => onAdminInputChange(orderSet.id, "payLink", event.target.value)}
                         />
                         <TextField
+                            name="order-fee"
                             variant="standard"
                             type="text"
                             inputProps={{ inputMode: "decimal", maxLength: 7, style: { textAlign: "right" } }}
@@ -815,6 +818,7 @@ export default function Main() {
                         </Typography>
                         <Box className="flex flex-col sm:flex-row gap-3">
                           <TextField
+                            name="order-item"
                             fullWidth
                             variant="standard"
                             label={isOwn ? t("components.orderset.ownorder_1") : t("components.orderset.ownorder_2")}
@@ -825,6 +829,7 @@ export default function Main() {
                             onChange={(event) => onOrderInputChange(orderSet.id, "order", event.target.value)}
                           />
                           <TextField
+                            name="order-price"
                             variant="standard"
                             type="text"
                             inputProps={{ inputMode: "decimal", maxLength: 7, style: { textAlign: "right" } }}
@@ -1216,6 +1221,7 @@ export default function Main() {
                       {locationEditor.id ? t("components.location_edit.edit", { name: locationEditor.name }) : t("components.location_edit.new_location")}
                     </Typography>
                     <TextField
+                      name="location-name"
                       variant="standard"
                       label="Name"
                       inputRef={locationNameInputRef}
@@ -1223,18 +1229,21 @@ export default function Main() {
                       onChange={(event) => setLocationEditor((previous: any) => ({ ...previous, name: event.target.value }))}
                     />
                     <TextField
+                      name="location-description"
                       variant="standard"
                       label={t("components.location_edit.shortdescription")}
                       value={locationEditor.description || ""}
                       onChange={(event) => setLocationEditor((previous: any) => ({ ...previous, description: event.target.value }))}
                     />
                     <TextField
+                      name="location-menu-link"
                       variant="standard"
                       label={t("components.location_edit.menu_link")}
                       value={locationEditor.menu_link || ""}
                       onChange={(event) => setLocationEditor((previous: any) => ({ ...previous, menu_link: event.target.value }))}
                     />
                     <TextField
+                      name="location-delivery-fee"
                       variant="standard"
                       label={t("general.fee")}
                       type="number"
