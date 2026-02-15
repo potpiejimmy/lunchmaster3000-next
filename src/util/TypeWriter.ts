@@ -5,7 +5,7 @@ export class TypeWriter {
     currentDir = false;
     started = false;
 
-    constructor(private phrases: any, private callback: any) {
+    constructor(private phrases: string[], private callback: (value: string) => void) {
     }
 
     start() {
@@ -18,33 +18,32 @@ export class TypeWriter {
     }
 
     next(waitTime: number) {
-        let _this = this;
-        setTimeout(function () {
-            if (!_this.started) return;
-            if (_this.currentDir)
-                _this.currentLength--;
+        setTimeout(() => {
+            if (!this.started) return;
+            if (this.currentDir)
+                this.currentLength--;
             else
-                _this.currentLength++;
-            var waitMs = _this.currentDir ? 20 : 20+Math.random()*70;
-            var doContinue = true;
-            if (!_this.currentDir && _this.currentLength === _this.phrases[_this.currentIndex].length) {
-                _this.currentDir = true;
+                this.currentLength++;
+            let waitMs = this.currentDir ? 20 : 20 + Math.random() * 70;
+            let doContinue = true;
+            if (!this.currentDir && this.currentLength === this.phrases[this.currentIndex].length) {
+                this.currentDir = true;
                 waitMs = 2000;
-                if (_this.currentIndex === _this.phrases.length-1)
+                if (this.currentIndex === this.phrases.length - 1)
                     doContinue = false;
             }
-            else if (_this.currentDir && _this.currentLength === 0) {
-                _this.currentDir = false;
-                _this.currentIndex = (_this.currentIndex + 1) % _this.phrases.length;
+            else if (this.currentDir && this.currentLength === 0) {
+                this.currentDir = false;
+                this.currentIndex = (this.currentIndex + 1) % this.phrases.length;
             }
-            var isWhole = _this.currentLength === _this.phrases[_this.currentIndex].length;
-            _this.callback(
-                _this.phrases[_this.currentIndex].substr(0, _this.currentLength) + ((isWhole || _this.currentLength===0) ? '' : '\u007C'));
+            const isWhole = this.currentLength === this.phrases[this.currentIndex].length;
+            this.callback(
+                this.phrases[this.currentIndex].substr(0, this.currentLength) + ((isWhole || this.currentLength === 0) ? '' : '\u007C'));
             if (doContinue)
-                _this.next(waitMs);
+                this.next(waitMs);
 			else {
 				waitMs = 600000;
-				_this.next(waitMs);
+				this.next(waitMs);
 			}
         }, waitTime);
     }

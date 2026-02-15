@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   Accordion,
   AccordionDetails,
   AccordionSummary,
@@ -17,6 +18,7 @@ import {
   DialogTitle,
   IconButton,
   Link,
+  Snackbar,
   Slider,
   SvgIcon,
   SvgIconProps,
@@ -74,6 +76,9 @@ export default function Main() {
   const locationEditorScrollAnchorRef = useRef<HTMLDivElement | null>(null);
   const locationNameInputRef = useRef<HTMLInputElement | null>(null);
   const locationImageInputRef = useRef<HTMLInputElement | null>(null);
+  const mainChatContainerRef = useRef<HTMLDivElement | null>(null);
+  const orderChatContainerRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const currentNameRef = useRef<string>("");
 
   const [data, setData] = useState<any>({ locations: [], ordersets: {}, chat: [] });
   const [typing, setTyping] = useState(false);
@@ -92,9 +97,22 @@ export default function Main() {
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const [foregroundPush, setForegroundPush] = useState<{ open: boolean; title: string; body: string }>({
+    open: false,
+    title: "",
+    body: "",
+  });
 
   const currentName = context?.name || (typeof window !== "undefined" ? localStorage.getItem("name") : "") || "";
   const orderSets = useMemo(() => Object.values<any>(data.ordersets || {}), [data.ordersets]);
+  const orderChatScrollSignature = useMemo(
+    () => orderSets.map((orderSet: any) => `${orderSet.id}:${(orderSet.chat || []).length}`).join("|"),
+    [orderSets],
+  );
+
+  useEffect(() => {
+    currentNameRef.current = currentName;
+  }, [currentName]);
 
   useEffect(() => {
     const currentIds = orderSets.map((orderSet: any) => String(orderSet.id));
@@ -156,6 +174,28 @@ export default function Main() {
   }, [Boolean(locationEditor), locationEditor?.id]);
 
   useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      const container = mainChatContainerRef.current;
+      if (!container) return;
+      container.scrollTop = container.scrollHeight;
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [(data.chat || []).length]);
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      for (const orderSet of orderSets) {
+        const container = orderChatContainerRefs.current[String(orderSet.id)];
+        if (!container) continue;
+        container.scrollTop = container.scrollHeight;
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [orderChatScrollSignature, orderSets]);
+
+  useEffect(() => {
     const currentSearch = new URLSearchParams(window.location.search);
     let id = currentSearch.get("id");
     const storedName = localStorage.getItem("name");
@@ -200,9 +240,55 @@ export default function Main() {
   async function startup(webid: string): Promise<void> {
     initSocket(webid);
     await load();
+    await requestNotificationPermission();
+  }
+
+  async function requestNotificationPermission() {
+    if (typeof window !== "undefined" && localStorage.getItem("notifications_enabled") === "false") {
+      return;
+    }
+
+    if (typeof Notification === "undefined") return;
+    if (Notification.permission !== "default") return;
+
     try {
       await Notification.requestPermission();
-    } catch {}
+    } catch {
+      // noop
+    }
+  }
+
+  async function showPushNotification(title: string, body: string, requireInteraction: boolean) {
+    if (typeof Notification === "undefined") return;
+    if (Notification.permission !== "granted") return;
+
+    if ("serviceWorker" in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          await registration.showNotification(title, {
+            body,
+            requireInteraction,
+          });
+          return;
+        }
+      } catch {
+        // noop
+      }
+    }
+
+    try {
+      new Notification(title, {
+        body,
+        requireInteraction,
+      });
+    } catch {
+      // noop
+    }
+  }
+
+  function showForegroundPushMessage(title: string, body: string) {
+    setForegroundPush({ open: true, title, body });
   }
 
   function initSocket(webid: string) {
@@ -218,12 +304,19 @@ export default function Main() {
       if (!typing) adaptDataFromServer(serverData);
     });
     socket.on("push", async (msg) => {
-      if (msg.name !== currentName) {
-        new Notification(msg.title, {
-          body: msg.type !== "chat" ? t("push." + msg.body, msg.params) : msg.body,
-          requireInteraction: msg.type !== "chat",
-        });
+      if (!msg || msg.name === currentNameRef.current) return;
+      if (typeof window !== "undefined" && localStorage.getItem("notifications_enabled") === "false") return;
+
+      const body = msg.type !== "chat" ? t("push." + msg.body, msg.params) : msg.body;
+      await showPushNotification(msg.title, body, msg.type !== "chat");
+
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        showForegroundPushMessage(msg.title, body);
       }
+    });
+
+    socket.on("connect_error", (err) => {
+      console.log(`socket.io connect error due to ${err.message}`);
     });
   }
 
@@ -993,7 +1086,12 @@ export default function Main() {
                   <Card className="highlightedCard" sx={{ backgroundColor: "#fafad2", m: 0 }}>
                     <CardContent>
                       <Typography variant="h6">{t("components.orderset.chat")}</Typography>
-                      <Box className="max-h-48 overflow-auto my-2 flex flex-col gap-2">
+                      <Box
+                        ref={(element: HTMLDivElement | null) => {
+                          orderChatContainerRefs.current[String(orderSet.id)] = element;
+                        }}
+                        className="max-h-64 overflow-y-scroll overflow-x-hidden my-2 flex flex-col gap-2"
+                      >
                         {(orderSet.chat || []).map((msg: any, index: number) => (
                           <Box key={`${orderSet.id}-chat-${index}`}>
                             <Typography variant="caption" sx={{ color: "text.secondary" }}>
@@ -1370,7 +1468,11 @@ export default function Main() {
           <Card sx={{ backgroundColor: "#fafad2", m: 0 }}>
             <CardContent>
               <Typography variant="h6">{t("components.orderset.chat")}</Typography>
-              <Box className="max-h-56 overflow-auto my-2 flex flex-col gap-2">
+              <Box
+                ref={mainChatContainerRef}
+                className="overflow-y-scroll overflow-x-hidden my-2 flex flex-col gap-2"
+                sx={{ maxHeight: "18.5rem" }}
+              >
                 {(data.chat || []).map((msg: any, index: number) => (
                   <Box key={`main-chat-${index}`}>
                     <Typography variant="caption" sx={{ color: "text.secondary" }}>
@@ -1439,6 +1541,23 @@ export default function Main() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={foregroundPush.open}
+        autoHideDuration={7000}
+        onClose={() => setForegroundPush((previous) => ({ ...previous, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setForegroundPush((previous) => ({ ...previous, open: false }))}
+          severity="info"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          <Typography sx={{ fontWeight: 700 }}>{foregroundPush.title}</Typography>
+          <Typography variant="body2">{foregroundPush.body}</Typography>
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

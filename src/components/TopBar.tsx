@@ -37,7 +37,7 @@ export default function TopBar() {
 
     function shiftAnimationDone() {
         if (animationState === 'shifted') {
-            let i = dishes.shift();
+            const i = dishes.shift();
             dishes.push(i!);
             setAnimationState('idle');
             setDishes(dishes);
@@ -55,16 +55,14 @@ export default function TopBar() {
 
     useEffect(() => {
         // mount:
-        let slogan = t("components.topbar.slogan");
+        const slogan = t("components.topbar.slogan");
         const tw = new TypeWriter([slogan,"lunch.community"], setTitle)
         tw.start();
-        let carouselTimeout: NodeJS.Timeout | undefined;
-        let carouselInterval: NodeJS.Timeout | undefined;
-    
-        carouselTimeout = setTimeout(() => {
+        const carouselTimeout: NodeJS.Timeout = setTimeout(() => {
             shiftCarousel();
             carouselInterval = setInterval(()=>shiftCarousel(), 10_000)
         }, 2_000);
+        let carouselInterval: NodeJS.Timeout | undefined;
 
         return () => {
             // unmount:

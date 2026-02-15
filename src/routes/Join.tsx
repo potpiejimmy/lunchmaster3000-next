@@ -14,8 +14,8 @@ export default function Join() {
     const [linkInput, setLinkInput] = React.useState('');
 
     async function join() {
-        let urlParams = new URLSearchParams(linkInput.substring(linkInput.indexOf("?")));
-        let communityId = urlParams && urlParams.get('id');
+        const urlParams = new URLSearchParams(linkInput.substring(linkInput.indexOf("?")));
+        const communityId = urlParams && urlParams.get('id');
         if(communityId)
             router.push('/?id=' + communityId);
         // else

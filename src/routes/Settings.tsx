@@ -1,7 +1,20 @@
 "use client";
 
 import React from "react";
-import { Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  Switch,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { useTranslation } from "react-i18next";
 import AppContext from "../AppContext";
 import { useRouter } from "next/navigation";
@@ -12,12 +25,41 @@ export default function Settings() {
   const router = useRouter();
   const [name, setName] = React.useState("");
   const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [notificationPermission, setNotificationPermission] = React.useState<
+    NotificationPermission | "unsupported"
+  >("unsupported");
+  const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
 
   React.useEffect(() => {
     const storedName = localStorage.getItem("name") ?? "";
     setName(storedName);
     context?.setName(storedName);
+
+    const storedNotificationsEnabled = localStorage.getItem("notifications_enabled");
+    setNotificationsEnabled(storedNotificationsEnabled !== "false");
+
+    if (typeof Notification !== "undefined") {
+      setNotificationPermission(Notification.permission);
+    }
   }, [context]);
+
+  React.useEffect(() => {
+    const refreshPermission = () => {
+      if (typeof Notification === "undefined") {
+        setNotificationPermission("unsupported");
+        return;
+      }
+      setNotificationPermission(Notification.permission);
+    };
+
+    document.addEventListener("visibilitychange", refreshPermission);
+    window.addEventListener("focus", refreshPermission);
+
+    return () => {
+      document.removeEventListener("visibilitychange", refreshPermission);
+      window.removeEventListener("focus", refreshPermission);
+    };
+  }, []);
 
   React.useEffect(() => {
     const currentSearch = new URLSearchParams(window.location.search);
@@ -87,6 +129,96 @@ export default function Settings() {
     leaveCommunity();
   }
 
+  async function enableNotifications() {
+    if (typeof Notification === "undefined") {
+      setNotificationPermission("unsupported");
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+    } catch {
+      setNotificationPermission(Notification.permission);
+    }
+  }
+
+  async function sendTestNotification() {
+    if (typeof Notification === "undefined") {
+      setNotificationPermission("unsupported");
+      return;
+    }
+
+    if (Notification.permission !== "granted") return;
+
+    const title = t("routes.settings.notifications_test_title");
+    const body = t("routes.settings.notifications_test_body");
+
+    if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          await registration.showNotification(title, { body });
+          return;
+        }
+      } catch {
+        // noop
+      }
+    }
+
+    try {
+      new Notification(title, { body });
+    } catch {
+      // noop
+    }
+  }
+
+  async function onNotificationToggleChanged(event: React.ChangeEvent<HTMLInputElement>) {
+    const nextEnabled = event.target.checked;
+
+    if (!nextEnabled) {
+      setNotificationsEnabled(false);
+      localStorage.setItem("notifications_enabled", "false");
+      return;
+    }
+
+    if (typeof Notification === "undefined") {
+      setNotificationPermission("unsupported");
+      setNotificationsEnabled(false);
+      localStorage.setItem("notifications_enabled", "false");
+      return;
+    }
+
+    if (Notification.permission === "granted") {
+      setNotificationsEnabled(true);
+      localStorage.setItem("notifications_enabled", "true");
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+
+      const enabled = permission === "granted";
+      setNotificationsEnabled(enabled);
+      localStorage.setItem("notifications_enabled", enabled ? "true" : "false");
+    } catch {
+      const currentPermission: NotificationPermission = Notification.permission;
+      setNotificationPermission(currentPermission);
+      const enabled = String(currentPermission) === "granted";
+      setNotificationsEnabled(enabled);
+      localStorage.setItem("notifications_enabled", enabled ? "true" : "false");
+    }
+  }
+
+  function notificationStatusKey() {
+    if (!notificationsEnabled) return "routes.settings.notifications_status_disabled";
+    if (notificationPermission === "granted") return "routes.settings.notifications_status_granted";
+    if (notificationPermission === "denied") return "routes.settings.notifications_status_denied";
+    if (notificationPermission === "default") return "routes.settings.notifications_status_default";
+    return "routes.settings.notifications_status_unsupported";
+  }
+
   return (
     <Box className="flex flex-col gap-4">
       <Card>
@@ -114,6 +246,38 @@ export default function Settings() {
             value={name}
             onChange={(event) => setName(event.target.value)}
           />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent>
+          <Typography gutterBottom variant="h6">
+            {t("routes.settings.notifications_title")}
+          </Typography>
+          <Typography sx={{ color: "text.secondary" }}>
+            {t("routes.settings.notifications_description")}
+          </Typography>
+          <Box className="mt-2">
+            <FormControlLabel
+              control={(
+                <Switch
+                  checked={notificationsEnabled}
+                  onChange={onNotificationToggleChanged}
+                  disabled={notificationPermission === "unsupported"}
+                />
+              )}
+              label={t("routes.settings.notifications_toggle")}
+            />
+          </Box>
+          <Typography sx={{ color: "text.secondary", mt: 1 }}>
+            {t(notificationStatusKey())}
+          </Typography>
+          {notificationPermission === "granted" && notificationsEnabled ? (
+            <Box className="mt-4">
+              <Button variant="outlined" onClick={sendTestNotification}>
+                {t("routes.settings.notifications_test")}
+              </Button>
+            </Box>
+          ) : null}
         </CardContent>
       </Card>
 

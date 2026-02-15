@@ -21,11 +21,11 @@ export default function Create() {
 
     async function create() {
         setProcessing(true);
-        let newCommunity:any = {
+        const newCommunity:any = {
             name: nameInput.trim()
         };
 
-        let c = await context?.api.createCommunity(newCommunity);
+        const c = await context?.api.createCommunity(newCommunity);
         router.push('/?id=' + c.webid);
     }
 

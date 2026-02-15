@@ -75,12 +75,12 @@ export default class HttpBase {
     async handleResponse(response: Promise<Response>): Promise<any> {
         return new Promise<any>(async (resolve,reject) => {
             try {
-                let res = await response;
+                const res = await response;
                 let body = null;
                 try { body = await res.json(); }
                 catch (e) { body = null; }
                 if (!res.status || res.status >= 400) {
-                    let error = body?.error?.message || body?.message || body;
+                    const error = body?.error?.message || body?.message || body;
                     reject(JSON.stringify(error) || "HTTP error")
                 }
                 resolve(body);
