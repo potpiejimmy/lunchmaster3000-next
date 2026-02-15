@@ -101,7 +101,7 @@
             "create_community_subtitle": "Create the lunch community for your team or organization here. Then, share the link to your community with your co-workers and friends.",
             "community_name": "Your community's name",
             "create_community_button": "Create community",
-            "join_community": "You can also join an exisiting community. Please click here:",
+            "join_community": "You can also join an existing community. Please click here:",
             "join_community_link": "join"
         },
         "main": {
@@ -142,7 +142,7 @@
             "hint_title": "Click here for info about how we use your name",
             "hint_1": "Your name is not stored on our servers. It is only stored in your current browser instance and it is used ",
             "hint_2": "to identify your orders. Usually your first name should be sufficient, but since the name is also used as an ",
-            "hint_3": "identification for your person, your should make sure it is unique within your community.",
+            "hint_3": "identification for your person, you should make sure it is unique within your community.",
             "hungry": "I'm hungry!"
         },
         "about": {
@@ -165,9 +165,9 @@
             "claim_reward": "Claim your XRP now!",
             "tip_sent": "We have sent you a tip! Thank you for your support! :)",
             "error_no_coil": "It seems like you don't have Coil. Sorry but you cannot claim any XRP.",
-            "error_tip_yourself": "Thank you! But unfortunately we cannot tip ourself :)",
-            "error_tipbot_disabled": "Sorry, this user has diabled his XRPTipbot account",
-            "error_unknown_user": "Sorry but this user does not have a XRPTipbot account.",
+            "error_tip_yourself": "Thank you! But unfortunately we cannot tip ourselves :)",
+            "error_tipbot_disabled": "Sorry, this user has disabled their XRPTipbot account.",
+            "error_unknown_user": "Sorry but this user does not have an XRPTipbot account.",
             "error_already_tipped": "Sorry but you have claimed your XRP already. You can only participate once at this time.",
             "error_no_balance": "Sorry, but our balance is not enough to send you this tip :-(",
             "error_generic_response": "Sorry, something went wrong."

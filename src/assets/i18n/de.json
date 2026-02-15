@@ -15,7 +15,7 @@
         "privacy_read_2": "Datenschutzerklärung",
         "privacy_read_3": " zur Kenntnis genommen.",
         "donation_btn_source": "https://www.paypalobjects.com/de_DE/i/btn/btn_donate_SM.gif",
-        "donation_text": "Deine Spende erhält die lunch.community am Leben!",
+        "donation_text": "Deine Spende hält die lunch.community am Leben!",
         "fee": "Liefergebühr",
         "optional": "optional",
         "loading": "Lade…",
@@ -113,7 +113,7 @@
             "welcome_text_3": "Bestellungen aufnehmen",
             "welcome_text_4": "Ansonsten warte einfach, bis ein anderer dies tut, dann kannst du dich anschließen.",
             "hint_title": "Hinweise zur Verwendung dieser Website",
-            "hint_1": "Du musst diese Website nicht neu laden (sie aktualisiert sich von alleine) und alles, was du anklickst und eintippst, ist für deine Commmunity sofort sichtbar,",
+            "hint_1": "Du musst diese Website nicht neu laden (sie aktualisiert sich von alleine) und alles, was du anklickst und eintippst, ist für deine Community sofort sichtbar,",
             "hint_2": "auch ohne dass du die Eingabe-Taste dazu drücken musst (Ausnahme: Chatnachricht absenden).",
             "community_new": "Diese Community scheint noch neu zu sein.",
             "invite_colleagues_1": "Bitte lade deine Kollegen zu dieser Community ein, indem du den Link zu dieser Community über das Teilen-Symbol",
@@ -161,7 +161,7 @@
         },
         "xrptip": {
             "title": "Hol' dir deine XRP!",
-            "subtitle": "Bitte trage deinen Tipbot-Namen ein und wähle dein Netwerk aus.",
+            "subtitle": "Bitte trage deinen Tipbot-Namen ein und wähle dein Netzwerk aus.",
             "xrphandle": "XrpTipbot Username",
             "claim_reward": "Hol dir jetzt deine XRP!",
             "tip_sent": "Wir haben dir einen Tip gesendet! Vielen Dank für deine Unterstützung! :)",
@@ -170,8 +170,8 @@
             "error_tipbot_disabled": "Sorry, dieser Nutzer hat seinen XRPTipbot Account deaktiviert.",
             "error_unknown_user": "Sorry, aber dieser User hat noch keinen XRPTipbot Account.",
             "error_already_tipped": "Sorry, aber du hast schon die XRP erhalten! Du kannst aktuell leider nur einmal teilnehmen.",
-            "error_no_balance": "Sorry, wir haben leider nicht mehr genug XRP um dir einen Tip zu senden.",
-            "error_generic_response": "Leider ist etwas schwiefgelaufen."
+            "error_no_balance": "Sorry, wir haben leider nicht mehr genug XRP, um dir einen Tip zu senden.",
+            "error_generic_response": "Leider ist etwas schiefgelaufen."
         }
     },
     "push": {
