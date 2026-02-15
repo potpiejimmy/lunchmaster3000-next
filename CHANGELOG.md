@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.5.0](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.4.0...v4.5.0) (2026-02-15)
+
+
+### Features
+
+* add notification controls and improve chat/push behavior ([4c08a52](https://github.com/potpiejimmy/lunchmaster3000-next/commit/4c08a52936c3aa488bb7debffe98c739a1becd8b))
+
 ## [4.4.0](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.3.0...v4.4.0) (2026-02-15)
 
 
