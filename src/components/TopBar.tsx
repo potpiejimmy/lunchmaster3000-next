@@ -79,7 +79,7 @@ export default function TopBar() {
             <AppBar position="static">
                 <Toolbar className="space-x-5">
                     <Link href="/"><Box className="topbar-logo"/></Link>
-                    <Box className="font-semibold text-xl">
+                    <Box className="font-semibold text-base leading-tight tracking-tight sm:text-xl whitespace-nowrap">
                         {title}
                     </Box>
                     <Box className="grow"/>
