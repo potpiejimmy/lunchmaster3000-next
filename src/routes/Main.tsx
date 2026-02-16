@@ -462,11 +462,15 @@ export default function Main() {
   async function getCroppedImageDataUrl(imageSrc: string, areaPixels: Area): Promise<string> {
     const image = await createImage(imageSrc);
     const canvas = document.createElement("canvas");
-    canvas.width = 360;
-    canvas.height = 240;
+    canvas.width = 180;
+    canvas.height = 120;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return imageSrc;
+
+    // High quality image smoothing
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
 
     ctx.drawImage(
       image,
@@ -1747,6 +1751,7 @@ export default function Main() {
                               cropShape="rect"
                               showGrid={false}
                               minZoom={0.5}
+                              restrictPosition={false}
                               onCropChange={setCrop}
                               onCropComplete={onCropComplete}
                               onZoomChange={setZoom}
