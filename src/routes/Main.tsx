@@ -462,8 +462,8 @@ export default function Main() {
   async function getCroppedImageDataUrl(imageSrc: string, areaPixels: Area): Promise<string> {
     const image = await createImage(imageSrc);
     const canvas = document.createElement("canvas");
-    canvas.width = 120;
-    canvas.height = 80;
+    canvas.width = 360;
+    canvas.height = 240;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return imageSrc;
@@ -1746,6 +1746,7 @@ export default function Main() {
                               aspect={3 / 2}
                               cropShape="rect"
                               showGrid={false}
+                              minZoom={0.5}
                               onCropChange={setCrop}
                               onCropComplete={onCropComplete}
                               onZoomChange={setZoom}
@@ -1754,7 +1755,7 @@ export default function Main() {
                           <Typography variant="caption" sx={{ color: "text.secondary" }}>
                             Zoom
                           </Typography>
-                          <Slider min={1} max={3} step={0.1} value={zoom} onChange={(_, value) => setZoom(value as number)} />
+                          <Slider min={0.5} max={3} step={0.1} value={zoom} onChange={(_, value) => setZoom(value as number)} />
                           <Box className="flex flex-row gap-2">
                             <Button variant="outlined" onClick={applyCroppedImage}>
                               Apply
