@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.7.0](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.6.2...v4.7.0) (2026-02-16)
+
+
+### Features
+
+* improve image quality (3x resolution) and allow zoom below frame size (minZoom 0.5) ([c2db129](https://github.com/potpiejimmy/lunchmaster3000-next/commit/c2db129510dd10f689000f0c83d10799e4c433d6))
+
 ### [4.6.2](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.6.1...v4.6.2) (2026-02-16)
 
 
