@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.6.2](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.6.1...v4.6.2) (2026-02-16)
+
+
+### Bug Fixes
+
+* support transparent images in uploader (PNG instead of JPEG) ([4e92ae2](https://github.com/potpiejimmy/lunchmaster3000-next/commit/4e92ae228fb0d3a4c4b8b727c40f00271d421ca6))
+
 ### [4.6.1](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.6.0...v4.6.1) (2026-02-16)
 
 ## [4.6.0](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.5.0...v4.6.0) (2026-02-16)
