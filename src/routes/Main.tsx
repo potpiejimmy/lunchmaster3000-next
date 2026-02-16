@@ -36,6 +36,8 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import SendIcon from "@mui/icons-material/Send";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
 import PrintIcon from "@mui/icons-material/Print";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { io, Socket } from "socket.io-client";
@@ -44,6 +46,8 @@ import Cropper, { Area, Point } from "react-easy-crop";
 
 type OrderInputMap = Record<string, { order: string; price: string }>;
 type AdminInputMap = Record<string, { comment: string; payLink: string; fee: string }>;
+type ManualOrderInputMap = Record<string, { name: string; order: string; price: string }>;
+type EditOrderEntryInputMap = Record<string, { order: string; price: string }>;
 
 function ThinStarOutlineIcon(props: SvgIconProps) {
   return (
@@ -68,6 +72,8 @@ export default function Main() {
   const orderTypingRef = useRef<Record<string, NodeJS.Timeout>>({});
   const adminTypingRef = useRef<Record<string, NodeJS.Timeout>>({});
   const orderInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const manualEntryNameInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const editOrderInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const orderSetCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const creatingOrderSetLocationIdsRef = useRef<Set<string>>(new Set());
   const pendingOpenOrderSetLocationIdsRef = useRef<Set<string>>(new Set());
@@ -88,8 +94,13 @@ export default function Main() {
   const [orderInputs, setOrderInputs] = useState<OrderInputMap>({});
   const [orderChatInputs, setOrderChatInputs] = useState<Record<string, string>>({});
   const [adminInputs, setAdminInputs] = useState<AdminInputMap>({});
+  const [manualOrderInputs, setManualOrderInputs] = useState<ManualOrderInputMap>({});
+  const [manualEntryEditors, setManualEntryEditors] = useState<Record<string, boolean>>({});
+  const [editOrderEntries, setEditOrderEntries] = useState<Record<string, boolean>>({});
+  const [editOrderEntryInputs, setEditOrderEntryInputs] = useState<EditOrderEntryInputMap>({});
   const [visibleEditLocationId, setVisibleEditLocationId] = useState<string | number | null>(null);
   const [pendingOrderSetDeletion, setPendingOrderSetDeletion] = useState<any | null>(null);
+  const [pendingOrderEntryDeletion, setPendingOrderEntryDeletion] = useState<{ orderSet: any; entryName: string } | null>(null);
   const [pendingLocationDeletion, setPendingLocationDeletion] = useState<any | null>(null);
   const [creatingOrderSetLocationId, setCreatingOrderSetLocationId] = useState<string | null>(null);
   const [pendingOpenOrderSetLocationIds, setPendingOpenOrderSetLocationIds] = useState<string[]>([]);
@@ -596,6 +607,125 @@ export default function Main() {
     }, 700);
   }
 
+  function onManualOrderInputChange(orderSetId: string, field: "name" | "order" | "price", value: string) {
+    const normalizedValue = field === "price" ? sanitizeDecimalInput(value).slice(0, 7) : value;
+    setManualOrderInputs((previous) => ({
+      ...previous,
+      [orderSetId]: {
+        ...(previous[orderSetId] || { name: "", order: "", price: "" }),
+        [field]: normalizedValue,
+      },
+    }));
+  }
+
+  function orderEntryEditKey(orderSetId: string | number, entryName: string) {
+    return `${String(orderSetId)}::${entryName}`;
+  }
+
+  function onEditOrderEntryInputChange(orderSetId: string | number, entryName: string, field: "order" | "price", value: string) {
+    const key = orderEntryEditKey(orderSetId, entryName);
+    const normalizedValue = field === "price" ? sanitizeDecimalInput(value).slice(0, 7) : value;
+    setEditOrderEntryInputs((previous) => ({
+      ...previous,
+      [key]: {
+        ...(previous[key] || { order: "", price: "" }),
+        [field]: normalizedValue,
+      },
+    }));
+  }
+
+  function openEditOrderEntry(orderSet: any, entryName: string, entryOrder: any) {
+    if (entryName === currentName) return;
+    const key = orderEntryEditKey(orderSet.id, entryName);
+    setEditOrderEntries((previous) => ({ ...previous, [key]: true }));
+    setEditOrderEntryInputs((previous) => ({
+      ...previous,
+      [key]: {
+        order: entryOrder?.order || "",
+        price: entryOrder?.price?.toString?.() || "",
+      },
+    }));
+
+    window.setTimeout(() => {
+      const input = editOrderInputRefs.current[key];
+      input?.focus();
+      input?.select();
+    }, 0);
+  }
+
+  function closeEditOrderEntry(orderSetId: string | number, entryName: string) {
+    const key = orderEntryEditKey(orderSetId, entryName);
+    setEditOrderEntries((previous) => ({ ...previous, [key]: false }));
+    setEditOrderEntryInputs((previous) => ({
+      ...previous,
+      [key]: { order: "", price: "" },
+    }));
+  }
+
+  async function saveEditOrderEntry(orderSet: any, entryName: string) {
+    if (entryName === currentName) return;
+
+    const key = orderEntryEditKey(orderSet.id, entryName);
+    const input = editOrderEntryInputs[key] || { order: "", price: "" };
+    const orderText = input.order.trim();
+
+    if (!orderText) {
+      await context?.api.setOrder(orderSet.id, entryName, {});
+      closeEditOrderEntry(orderSet.id, entryName);
+      return;
+    }
+
+    const existingOrder = orderSet?.orders?.[entryName] || {};
+    await context?.api.setOrder(orderSet.id, entryName, {
+      ...existingOrder,
+      order: orderText,
+      price: parseDecimalInput(input.price),
+    });
+    closeEditOrderEntry(orderSet.id, entryName);
+  }
+
+  function openManualEntryEditor(orderSetId: string) {
+    setManualEntryEditors((previous) => ({ ...previous, [orderSetId]: true }));
+    setManualOrderInputs((previous) => ({
+      ...previous,
+      [orderSetId]: previous[orderSetId] || { name: "", order: "", price: "" },
+    }));
+
+    window.setTimeout(() => {
+      const input = manualEntryNameInputRefs.current[String(orderSetId)];
+      input?.focus();
+      input?.select();
+    }, 0);
+  }
+
+  function closeManualEntryEditor(orderSetId: string) {
+    setManualEntryEditors((previous) => ({ ...previous, [orderSetId]: false }));
+    setManualOrderInputs((previous) => ({
+      ...previous,
+      [orderSetId]: { name: "", order: "", price: "" },
+    }));
+  }
+
+  async function addManualOrderEntry(orderSet: any) {
+    const editorInput = manualOrderInputs[orderSet.id] || { name: "", order: "", price: "" };
+    const entryName = editorInput.name.trim();
+    const entryOrder = editorInput.order.trim();
+    if (!entryName || !entryOrder) return;
+
+    const existingOrder = orderSet?.orders?.[entryName] || {};
+    await context?.api.setOrder(orderSet.id, entryName, {
+      ...existingOrder,
+      order: entryOrder,
+      price: parseDecimalInput(editorInput.price),
+    });
+
+    setManualOrderInputs((previous) => ({
+      ...previous,
+      [orderSet.id]: { name: "", order: "", price: "" },
+    }));
+    setManualEntryEditors((previous) => ({ ...previous, [orderSet.id]: false }));
+  }
+
   function onAdminInputChange(orderSetId: string, field: "comment" | "payLink" | "fee", value: string) {
     const normalizedValue = field === "fee" ? sanitizeDecimalInput(value).slice(0, 7) : value;
     const next = {
@@ -674,6 +804,27 @@ export default function Main() {
   async function toggleMoneyReceived(orderSet: any, userName: string, checked: boolean) {
     const updatedOrder = { ...(orderSet.orders?.[userName] || {}), moneyReceived: checked };
     await context?.api.setOrder(orderSet.id, userName, updatedOrder);
+  }
+
+  async function deleteOrderEntry(orderSet: any, entryName: string) {
+    if (entryName === currentName) return;
+    await context?.api.setOrder(orderSet.id, entryName, {});
+  }
+
+  function openDeleteOrderEntryConfirm(orderSet: any, entryName: string) {
+    if (entryName === currentName) return;
+    setPendingOrderEntryDeletion({ orderSet, entryName });
+  }
+
+  function closeDeleteOrderEntryConfirm() {
+    setPendingOrderEntryDeletion(null);
+  }
+
+  async function confirmDeleteOrderEntry() {
+    if (!pendingOrderEntryDeletion) return;
+    const { orderSet, entryName } = pendingOrderEntryDeletion;
+    closeDeleteOrderEntryConfirm();
+    await deleteOrderEntry(orderSet, entryName);
   }
 
   async function sendMainChat() {
@@ -817,6 +968,10 @@ export default function Main() {
         const hasArrived = Boolean(orderSet?.arrived);
         const orderEntries = Object.entries<any>(orderSet?.orders || {});
         const headerImage = orderSet.location?.icon ? `${resourcesBaseUrl()}/${orderSet.location.icon}.png` : "/assets/placeholder.jpg";
+        const manualEntryInput = manualOrderInputs[orderSet.id] || { name: "", order: "", price: "" };
+        const isManualEditorOpen = Boolean(manualEntryEditors[orderSet.id]);
+        const canManageEntries = isOwn && orderSet.finished && !orderSet.arrived;
+        const orderListGridTemplateColumns = `minmax(0,1fr) minmax(0,2fr) minmax(72px,.7fr) minmax(72px,.7fr) minmax(78px,.8fr) minmax(96px,1fr) ${canManageEntries ? "minmax(96px,.95fr)" : "0px"}`;
 
         return (
           <Card
@@ -948,7 +1103,7 @@ export default function Main() {
                       <Box
                         className="hidden sm:grid gap-1 pb-1 border-b border-gray-300"
                         sx={{
-                          gridTemplateColumns: "minmax(0,1fr) minmax(0,2fr) minmax(72px,.7fr) minmax(72px,.7fr) minmax(78px,.8fr) minmax(96px,1fr)",
+                          gridTemplateColumns: orderListGridTemplateColumns,
                           fontWeight: 700,
                           fontSize: "0.8rem",
                         }}
@@ -959,11 +1114,19 @@ export default function Main() {
                         <Typography variant="caption" sx={{ fontWeight: 700, textAlign: "right" }}>{t("general.fee")}</Typography>
                         <Typography variant="caption" sx={{ fontWeight: 700, textAlign: "right" }}>{t("components.orderset.total")}</Typography>
                         <Typography variant="caption" sx={{ fontWeight: 700, textAlign: "right" }}>{t("components.orderset.money_received")}</Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 700, textAlign: "right" }}>&nbsp;</Typography>
                       </Box>
                       <Box className="flex flex-col gap-0">
                         {orderEntries.map(([entryName, entryOrder]) => {
+                          const entryEditKey = orderEntryEditKey(orderSet.id, entryName);
+                          const isEntryEditing = Boolean(editOrderEntries[entryEditKey]);
+                          const editInput = editOrderEntryInputs[entryEditKey] || {
+                            order: entryOrder?.order || "",
+                            price: entryOrder?.price?.toString?.() || "",
+                          };
+                          const displayedPrice = isEntryEditing ? parseDecimalInput(editInput.price) : Number(entryOrder?.price || 0);
                           const fee = feePerPerson(orderSet);
-                          const total = totalPerPerson(orderSet, Number(entryOrder?.price || 0));
+                          const total = totalPerPerson(orderSet, displayedPrice);
                           const showPayNow = orderSet.finished && orderSet.payLink && entryName === currentName && orderSet.name !== currentName && total > 0;
 
                           return (
@@ -971,13 +1134,37 @@ export default function Main() {
                               <Box
                                 className="hidden sm:grid items-center gap-1"
                                 sx={{
-                                  gridTemplateColumns: "minmax(0,1fr) minmax(0,2fr) minmax(72px,.7fr) minmax(72px,.7fr) minmax(78px,.8fr) minmax(96px,1fr)",
+                                  gridTemplateColumns: orderListGridTemplateColumns,
                                   minHeight: 44,
                                 }}
                               >
                                 <Typography noWrap title={entryName} sx={{ minWidth: 0 }}><b>{entryName}</b></Typography>
-                                <Typography noWrap title={entryOrder?.order || ""} sx={{ minWidth: 0 }}>{entryOrder?.order || ""}</Typography>
-                                <Typography sx={{ textAlign: "right" }}>{formatMoney(Number(entryOrder?.price || 0))}</Typography>
+                                {isEntryEditing ? (
+                                  <TextField
+                                    fullWidth
+                                    variant="standard"
+                                    value={editInput.order}
+                                    inputRef={(element) => {
+                                      editOrderInputRefs.current[entryEditKey] = element;
+                                    }}
+                                    onChange={(event) => onEditOrderEntryInputChange(orderSet.id, entryName, "order", event.target.value)}
+                                    onKeyDown={(event) => (event.key === "Enter" ? saveEditOrderEntry(orderSet, entryName) : undefined)}
+                                  />
+                                ) : (
+                                  <Typography noWrap title={entryOrder?.order || ""} sx={{ minWidth: 0 }}>{entryOrder?.order || ""}</Typography>
+                                )}
+                                {isEntryEditing ? (
+                                  <TextField
+                                    variant="standard"
+                                    type="text"
+                                    inputProps={{ inputMode: "decimal", maxLength: 7, style: { textAlign: "right" } }}
+                                    value={editInput.price}
+                                    onChange={(event) => onEditOrderEntryInputChange(orderSet.id, entryName, "price", event.target.value)}
+                                    onKeyDown={(event) => (event.key === "Enter" ? saveEditOrderEntry(orderSet, entryName) : undefined)}
+                                  />
+                                ) : (
+                                  <Typography sx={{ textAlign: "right" }}>{formatMoney(Number(entryOrder?.price || 0))}</Typography>
+                                )}
                                 <Typography sx={{ textAlign: "right" }}>{formatMoney(fee)}</Typography>
                                 <Box sx={{ textAlign: "right" }}>
                                   <Typography sx={{ textAlign: "right" }}><b>{formatMoney(total)}</b></Typography>
@@ -997,12 +1184,74 @@ export default function Main() {
                                     />
                                   )}
                                 </Box>
+                                <Box sx={{ minHeight: 42, display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+                                  {canManageEntries && entryName !== currentName && !isEntryEditing && (
+                                    <>
+                                      <IconButton
+                                        size="small"
+                                        title={t("general.edit")}
+                                        onClick={() => openEditOrderEntry(orderSet, entryName, entryOrder)}
+                                      >
+                                        <EditIcon fontSize="small" />
+                                      </IconButton>
+                                      <IconButton
+                                        size="small"
+                                        title={t("general.delete")}
+                                        onClick={() => openDeleteOrderEntryConfirm(orderSet, entryName)}
+                                      >
+                                        <DeleteIcon fontSize="small" />
+                                      </IconButton>
+                                    </>
+                                  )}
+                                  {canManageEntries && entryName !== currentName && isEntryEditing && (
+                                    <>
+                                      <IconButton
+                                        size="small"
+                                        title={t("general.save")}
+                                        onClick={() => saveEditOrderEntry(orderSet, entryName)}
+                                      >
+                                        <CheckIcon fontSize="small" />
+                                      </IconButton>
+                                      <IconButton
+                                        size="small"
+                                        title={t("general.cancel")}
+                                        onClick={() => closeEditOrderEntry(orderSet.id, entryName)}
+                                      >
+                                        <CloseIcon fontSize="small" />
+                                      </IconButton>
+                                    </>
+                                  )}
+                                </Box>
                               </Box>
 
                               <Box className="sm:hidden flex flex-col gap-1">
                                 <Typography><b>{entryName}</b></Typography>
-                                <Typography>{entryOrder?.order || ""}</Typography>
-                                <Typography variant="caption">{t("components.orderset.price")}: {formatMoney(Number(entryOrder?.price || 0))}</Typography>
+                                {isEntryEditing ? (
+                                  <TextField
+                                    fullWidth
+                                    variant="standard"
+                                    value={editInput.order}
+                                    inputRef={(element) => {
+                                      editOrderInputRefs.current[entryEditKey] = element;
+                                    }}
+                                    onChange={(event) => onEditOrderEntryInputChange(orderSet.id, entryName, "order", event.target.value)}
+                                    onKeyDown={(event) => (event.key === "Enter" ? saveEditOrderEntry(orderSet, entryName) : undefined)}
+                                  />
+                                ) : (
+                                  <Typography>{entryOrder?.order || ""}</Typography>
+                                )}
+                                {isEntryEditing ? (
+                                  <TextField
+                                    variant="standard"
+                                    type="text"
+                                    inputProps={{ inputMode: "decimal", maxLength: 7, style: { textAlign: "right" } }}
+                                    value={editInput.price}
+                                    onChange={(event) => onEditOrderEntryInputChange(orderSet.id, entryName, "price", event.target.value)}
+                                    onKeyDown={(event) => (event.key === "Enter" ? saveEditOrderEntry(orderSet, entryName) : undefined)}
+                                  />
+                                ) : (
+                                  <Typography variant="caption">{t("components.orderset.price")}: {formatMoney(Number(entryOrder?.price || 0))}</Typography>
+                                )}
                                 <Typography variant="caption">{t("general.fee")}: {formatMoney(fee)}</Typography>
                                 <Typography variant="caption"><b>{t("components.orderset.total")}: {formatMoney(total)}</b></Typography>
                                 {showPayNow && (
@@ -1018,6 +1267,46 @@ export default function Main() {
                                       onChange={(event) => toggleMoneyReceived(orderSet, entryName, event.target.checked)}
                                     />
                                     <Typography variant="caption">{t("components.orderset.money_received")}</Typography>
+                                  </Box>
+                                )}
+                                {canManageEntries && entryName !== currentName && !isEntryEditing && (
+                                  <Box className="flex flex-row items-center">
+                                    <Typography variant="caption">{t("general.edit")}</Typography>
+                                    <IconButton
+                                      size="small"
+                                      title={t("general.edit")}
+                                      onClick={() => openEditOrderEntry(orderSet, entryName, entryOrder)}
+                                    >
+                                      <EditIcon fontSize="small" />
+                                    </IconButton>
+                                    <Typography variant="caption">{t("general.delete")}</Typography>
+                                    <IconButton
+                                      size="small"
+                                      title={t("general.delete")}
+                                      onClick={() => openDeleteOrderEntryConfirm(orderSet, entryName)}
+                                    >
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </Box>
+                                )}
+                                {canManageEntries && entryName !== currentName && isEntryEditing && (
+                                  <Box className="flex flex-row items-center">
+                                    <Typography variant="caption">{t("general.save")}</Typography>
+                                    <IconButton
+                                      size="small"
+                                      title={t("general.save")}
+                                      onClick={() => saveEditOrderEntry(orderSet, entryName)}
+                                    >
+                                      <CheckIcon fontSize="small" />
+                                    </IconButton>
+                                    <Typography variant="caption">{t("general.cancel")}</Typography>
+                                    <IconButton
+                                      size="small"
+                                      title={t("general.cancel")}
+                                      onClick={() => closeEditOrderEntry(orderSet.id, entryName)}
+                                    >
+                                      <CloseIcon fontSize="small" />
+                                    </IconButton>
                                   </Box>
                                 )}
                               </Box>
@@ -1037,6 +1326,64 @@ export default function Main() {
                           </Typography>
                         )}
                       </Box>
+
+                      {canManageEntries && (
+                        <Box sx={{ mt: 2, pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>
+                          {!isManualEditorOpen && (
+                            <Button variant="outlined" startIcon={<AddIcon />} onClick={() => openManualEntryEditor(orderSet.id)}>
+                              {t("components.orderset.add_entry")}
+                            </Button>
+                          )}
+
+                          {isManualEditorOpen && (
+                            <Box className="flex flex-col gap-2">
+                              <Box className="flex flex-col sm:flex-row gap-3">
+                                <TextField
+                                  name="manual-entry-name"
+                                  fullWidth
+                                  variant="standard"
+                                  label={t("general.name")}
+                                  inputRef={(element) => {
+                                    manualEntryNameInputRefs.current[String(orderSet.id)] = element;
+                                  }}
+                                  value={manualEntryInput.name}
+                                  onChange={(event) => onManualOrderInputChange(orderSet.id, "name", event.target.value)}
+                                />
+                                <TextField
+                                  name="manual-entry-order"
+                                  fullWidth
+                                  variant="standard"
+                                  label={t("components.orderset.user_order_request")}
+                                  value={manualEntryInput.order}
+                                  onChange={(event) => onManualOrderInputChange(orderSet.id, "order", event.target.value)}
+                                />
+                                <TextField
+                                  name="manual-entry-price"
+                                  variant="standard"
+                                  type="text"
+                                  inputProps={{ inputMode: "decimal", maxLength: 7, style: { textAlign: "right" } }}
+                                  label={t("components.orderset.price")}
+                                  value={manualEntryInput.price}
+                                  onChange={(event) => onManualOrderInputChange(orderSet.id, "price", event.target.value)}
+                                />
+                              </Box>
+
+                              <Box className="flex flex-row gap-2">
+                                <Button
+                                  variant="contained"
+                                  onClick={() => addManualOrderEntry(orderSet)}
+                                  disabled={!manualEntryInput.name.trim() || !manualEntryInput.order.trim()}
+                                >
+                                  {t("general.save")}
+                                </Button>
+                                <Button variant="outlined" onClick={() => closeManualEntryEditor(orderSet.id)}>
+                                  {t("general.cancel")}
+                                </Button>
+                              </Box>
+                            </Box>
+                          )}
+                        </Box>
+                      )}
                     </CardContent>
                   </Card>
 
@@ -1516,6 +1863,26 @@ export default function Main() {
           <Button onClick={closeDeleteOrderSetConfirm}>{t("components.orderset.confirm_deletion_no")}</Button>
           <Button color="error" variant="contained" onClick={confirmDeleteOrderSet}>
             {t("components.orderset.confirm_deletion_yes")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(pendingOrderEntryDeletion)}
+        onClose={closeDeleteOrderEntryConfirm}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>{t("components.orderset.confirm_entry_deletion_header")}</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ color: "text.secondary" }}>
+            {t("components.orderset.confirm_entry_deletion_question", { name: pendingOrderEntryDeletion?.entryName || "" })}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={closeDeleteOrderEntryConfirm}>{t("general.cancel")}</Button>
+          <Button color="error" variant="contained" onClick={confirmDeleteOrderEntry}>
+            {t("general.delete")}
           </Button>
         </DialogActions>
       </Dialog>
