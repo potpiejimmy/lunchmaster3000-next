@@ -480,7 +480,7 @@ export default function Main() {
       canvas.height,
     );
 
-    return canvas.toDataURL("image/jpeg", 0.8);
+    return canvas.toDataURL("image/png");
   }
 
   async function applyCroppedImage() {
