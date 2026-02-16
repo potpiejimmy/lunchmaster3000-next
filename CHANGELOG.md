@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.8.0](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.7.0...v4.8.0) (2026-02-16)
+
+
+### Features
+
+* optimize image size (180x120), add high-quality smoothing, allow free positioning at any zoom ([68badf1](https://github.com/potpiejimmy/lunchmaster3000-next/commit/68badf1e645849676cbba8d7c4cd72e5fb2deb1d))
+
 ## [4.7.0](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.6.2...v4.7.0) (2026-02-16)
 
 
