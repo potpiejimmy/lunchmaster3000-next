@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.6.0](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.5.0...v4.6.0) (2026-02-16)
+
+
+### Features
+
+* allow editing of order list in closed state (create, update, delete) ([e274713](https://github.com/potpiejimmy/lunchmaster3000-next/commit/e2747136147d8ffac1120b316ea1e57c0c03313f))
+
 ## [4.5.0](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.4.0...v4.5.0) (2026-02-15)
 
 
