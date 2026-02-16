@@ -1090,7 +1090,7 @@ export default function Main() {
                         ref={(element: HTMLDivElement | null) => {
                           orderChatContainerRefs.current[String(orderSet.id)] = element;
                         }}
-                        className="max-h-64 overflow-y-scroll overflow-x-hidden my-2 flex flex-col gap-2"
+                        className="max-h-64 overflow-auto my-2 flex flex-col gap-2"
                       >
                         {(orderSet.chat || []).map((msg: any, index: number) => (
                           <Box key={`${orderSet.id}-chat-${index}`}>
@@ -1470,8 +1470,7 @@ export default function Main() {
               <Typography variant="h6">{t("components.orderset.chat")}</Typography>
               <Box
                 ref={mainChatContainerRef}
-                className="overflow-y-scroll overflow-x-hidden my-2 flex flex-col gap-2"
-                sx={{ maxHeight: "18.5rem" }}
+                className="max-h-64 overflow-auto my-2 flex flex-col gap-2"
               >
                 {(data.chat || []).map((msg: any, index: number) => (
                   <Box key={`main-chat-${index}`}>
