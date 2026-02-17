@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.9.0](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.8.0...v4.9.0) (2026-02-17)
+
+
+### Features
+
+* transparent checkered background in image cropper with dark crop area border ([22e39af](https://github.com/potpiejimmy/lunchmaster3000-next/commit/22e39af392001005c2e0f9f9fc4417308e0792d0))
+
 ## [4.8.0](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.7.0...v4.8.0) (2026-02-16)
 
 
