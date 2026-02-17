@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.9.2](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.9.1...v4.9.2) (2026-02-17)
+
 ### [4.9.1](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.9.0...v4.9.1) (2026-02-17)
 
 
