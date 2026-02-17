@@ -1742,7 +1742,18 @@ export default function Main() {
                       </Button>
                       {rawImageSrc && (
                         <Box className="flex flex-col gap-2">
-                          <Box sx={{ position: "relative", width: "100%", height: 280, backgroundColor: "#000" }}>
+                          <Box 
+                            sx={{ 
+                              position: "relative", 
+                              width: "100%", 
+                              height: 280,
+                              backgroundImage: `
+                                repeating-conic-gradient(#d0d0d0 0% 25%, #f0f0f0 0% 50%)
+                              `,
+                              backgroundSize: "20px 20px",
+                              backgroundPosition: "0 0, 10px 10px"
+                            }}
+                          >
                             <Cropper
                               image={rawImageSrc}
                               crop={crop}
@@ -1755,6 +1766,15 @@ export default function Main() {
                               onCropChange={setCrop}
                               onCropComplete={onCropComplete}
                               onZoomChange={setZoom}
+                              style={{
+                                containerStyle: {
+                                  backgroundColor: 'transparent'
+                                }
+                              }}
+                              cropAreaStyle={{
+                                border: '2px solid rgba(0, 0, 0, 0.7)',
+                                color: 'rgba(0, 0, 0, 0.5)'
+                              }}
                             />
                           </Box>
                           <Typography variant="caption" sx={{ color: "text.secondary" }}>
