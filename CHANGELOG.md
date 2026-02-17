@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.9.1](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.9.0...v4.9.1) (2026-02-17)
+
+
+### Bug Fixes
+
+* move cropAreaStyle inside style prop ([386fdae](https://github.com/potpiejimmy/lunchmaster3000-next/commit/386fdae1271b2803ba29fb11bc35f5b86f9ef821))
+
 ## [4.9.0](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.8.0...v4.9.0) (2026-02-17)
 
 
