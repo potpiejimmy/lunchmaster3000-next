@@ -1769,11 +1769,11 @@ export default function Main() {
                               style={{
                                 containerStyle: {
                                   backgroundColor: 'transparent'
+                                },
+                                cropAreaStyle: {
+                                  border: '2px solid rgba(0, 0, 0, 0.7)',
+                                  color: 'rgba(0, 0, 0, 0.5)'
                                 }
-                              }}
-                              cropAreaStyle={{
-                                border: '2px solid rgba(0, 0, 0, 0.7)',
-                                color: 'rgba(0, 0, 0, 0.5)'
                               }}
                             />
                           </Box>
