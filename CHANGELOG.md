@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.9.3](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.9.2...v4.9.3) (2026-02-18)
+
+
+### Bug Fixes
+
+* add trailing space to main.hint_1 in de.json (matching en.json) ([750c4b7](https://github.com/potpiejimmy/lunchmaster3000-next/commit/750c4b771961e864a8ddb3a86a14285cccb670e4))
+
 ### [4.9.2](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.9.1...v4.9.2) (2026-02-17)
 
 ### [4.9.1](https://github.com/potpiejimmy/lunchmaster3000-next/compare/v4.9.0...v4.9.1) (2026-02-17)
